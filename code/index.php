@@ -9,6 +9,7 @@
     // Précise les identifiants pour se connecter à la base de données.
     $utilisateur = "info_1_gr_1";
     $mot_de_passe = "héhé t'as cru quoi 😘";
+    f
 
     // Inclut l'autre moitié du site (connexion à la base, vue et contrôleur).
     require_once "../../system/index.php";
