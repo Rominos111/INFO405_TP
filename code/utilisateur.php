@@ -5,42 +5,47 @@
 	function cree_table_utilisateur() {
         $conn = bdd();
 
-        $conn->query("CREATE TABLE User (
-            login VARCHAR(45) NOT NULL,
-            password VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS Utilisateur (
+            login VARCHAR(100) NOT NULL,
+            password VARCHAR(100) NOT NULL,
             dateNaissance DATE NOT NULL,
             niveauSql ENUM('DEBUTANT', 'INTERMEDIAIRE', 'AVANCE'),
-            description VARCHAR(45),
+            description VARCHAR(100),
             points INT DEFAULT 0,
             CONSTRAINT pk_User PRIMARY KEY (login)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
-        $conn->query("CREATE TABLE Specialite (
-            name VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS Specialite (
+            name VARCHAR(100) NOT NULL,
             CONSTRAINT pk_Specialite PRIMARY KEY (name)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
-        $conn->query("CREATE TABLE Competence (
-            userLogin VARCHAR(45) NOT NULL,
-            specialiteName VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS Competence (
+            userLogin VARCHAR(100) NOT NULL,
+            specialiteName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_Competence PRIMARY KEY (userLogin, specialiteName),
-            CONSTRAINT fk_Competence_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_Competence_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
             CONSTRAINT fk_Competence_2 FOREIGN KEY (specialiteName) REFERENCES Specialite(name)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
-        $conn->query("CREATE TABLE Action (
-            name VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS Action (
+            name VARCHAR(100) NOT NULL,
             reward INT NOT NULL,
             CONSTRAINT pk_Action PRIMARY KEY (name)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
-        $conn->query("CREATE TABLE UserAction (
-            userLogin VARCHAR(45) NOT NULL,
-            actionName VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS UtilisateurAction (
+            userLogin VARCHAR(100) NOT NULL,
+            actionName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_UserAction PRIMARY KEY (userLogin, actionName),
-            CONSTRAINT fk_UserAction_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_UserAction_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
             CONSTRAINT fk_UserAction_2 FOREIGN KEY (actionName) REFERENCES Action(name)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
 		// la fonction bdd() renvoie l'instance de connexion à la base de données.
 	}

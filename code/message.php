@@ -6,15 +6,16 @@
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE Message (
+        $conn->query("CREATE TABLE IF NOT EXISTS Message (
             idMessage INT NOT NULL,
-            content VARCHAR(45) NOT NULL,
+            content VARCHAR(100) NOT NULL,
             sujetIdDestination INT NOT NULL,
-            senderLogin VARCHAR(45) NOT NULL,
+            senderLogin VARCHAR(100) NOT NULL,
             CONSTRAINT pk_Message PRIMARY KEY (idMessage),
-            CONSTRAINT fk_Message_1 FOREIGN KEY (senderLogin) REFERENCES User(login),
+            CONSTRAINT fk_Message_1 FOREIGN KEY (senderLogin) REFERENCES Utilisateur(login),
             CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(idSujet)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
     }
 
     /*

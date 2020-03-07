@@ -6,26 +6,30 @@
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE Groupe (
+        $conn->query("CREATE TABLE IF NOT EXISTS Groupe (
             idGroupe INT NOT NULL,
-            name VARCHAR(45) NOT NULL,
-            PRIMARY KEY (idGroupe))");
+            name VARCHAR(100) NOT NULL,
+            PRIMARY KEY (idGroupe)
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
-        $conn->query("CREATE TABLE UserGroupe (
-            userLogin VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS UtilisateurGroupe (
+            userLogin VARCHAR(100) NOT NULL,
             groupId INT NOT NULL,
             CONSTRAINT pk_UserGroupe PRIMARY KEY (userLogin, groupId),
-            CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
             CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(idGroupe)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
 
-        $conn->query("CREATE TABLE Invite (
-            userLogin VARCHAR(45) NOT NULL,
+        $conn->query("CREATE TABLE IF NOT EXISTS Invitation (
+            userLogin VARCHAR(100) NOT NULL,
             groupeId INT NOT NULL,
             CONSTRAINT pk_Invite PRIMARY KEY (userLogin, groupeId),
-            CONSTRAINT fk_Invite_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_Invite_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
             CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(idGroupe)
-        )");
+        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
     }
 
     /*
