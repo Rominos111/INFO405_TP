@@ -6,7 +6,7 @@
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Message (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Message (
             idMessage INT NOT NULL,
             content VARCHAR(100) NOT NULL,
             sujetIdDestination INT NOT NULL,
@@ -16,6 +16,7 @@
             CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(idSujet)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
     }
 
     /*

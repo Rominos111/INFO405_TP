@@ -6,14 +6,15 @@
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Groupe (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Groupe (
             idGroupe INT NOT NULL,
             name VARCHAR(100) NOT NULL,
             PRIMARY KEY (idGroupe)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS UtilisateurGroupe (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS UtilisateurGroupe (
             userLogin VARCHAR(100) NOT NULL,
             groupId INT NOT NULL,
             CONSTRAINT pk_UserGroupe PRIMARY KEY (userLogin, groupId),
@@ -21,8 +22,9 @@
             CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(idGroupe)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Invitation (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Invitation (
             userLogin VARCHAR(100) NOT NULL,
             groupeId INT NOT NULL,
             CONSTRAINT pk_Invite PRIMARY KEY (userLogin, groupeId),
@@ -30,6 +32,7 @@
             CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(idGroupe)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
     }
 
     /*

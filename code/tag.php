@@ -6,13 +6,14 @@
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Tag (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Tag (
             nameTag VARCHAR(100) NOT NULL,
             CONSTRAINT pk_Tag PRIMARY KEY (nameTag)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS SujetTag (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS SujetTag (
             sujetId INT NOT NULL,
             tagName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_SujetTag PRIMARY KEY (sujetId, tagName),
@@ -20,6 +21,7 @@
             CONSTRAINT fk_SujetTag_2 FOREIGN KEY (tagName) REFERENCES Tag(nameTag)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
     }
 
     /*

@@ -6,7 +6,7 @@
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Sujet (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Sujet (
             idSujet INT NOT NULL,
             title VARCHAR(100) NOT NULL,
             description VARCHAR(100) NOT NULL,
@@ -16,8 +16,9 @@
             CONSTRAINT fk_Sujet FOREIGN KEY (creatorLogin) REFERENCES Utilisateur(login)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Favoris (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Favoris (
             userLogin VARCHAR(100) NOT NULL,
             sujetId INT NOT NULL,
             CONSTRAINT pk_Favoris PRIMARY KEY (userLogin, sujetId),
@@ -25,6 +26,7 @@
             CONSTRAINT fk_Favoris_2 FOREIGN KEY (sujetId) REFERENCES Sujet(idSujet)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
     }
 
     /*

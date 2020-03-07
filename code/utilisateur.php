@@ -1,11 +1,12 @@
 <?php
-	/*
-		Crée toutes les tables en relation avec l'utilisateur.
-	*/
-	function cree_table_utilisateur() {
+    /*
+        Crée toutes les tables en relation avec l'utilisateur.
+    */
+    function cree_table_utilisateur() {
+        // la fonction bdd() renvoie l'instance de connexion à la base de données.
         $conn = bdd();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Utilisateur (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Utilisateur (
             login VARCHAR(100) NOT NULL,
             password VARCHAR(100) NOT NULL,
             dateNaissance DATE NOT NULL,
@@ -15,14 +16,16 @@
             CONSTRAINT pk_User PRIMARY KEY (login)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Specialite (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Specialite (
             name VARCHAR(100) NOT NULL,
             CONSTRAINT pk_Specialite PRIMARY KEY (name)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Competence (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Competence (
             userLogin VARCHAR(100) NOT NULL,
             specialiteName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_Competence PRIMARY KEY (userLogin, specialiteName),
@@ -30,15 +33,17 @@
             CONSTRAINT fk_Competence_2 FOREIGN KEY (specialiteName) REFERENCES Specialite(name)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
 
-        $conn->query("CREATE TABLE IF NOT EXISTS Action (
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Action (
             name VARCHAR(100) NOT NULL,
             reward INT NOT NULL,
             CONSTRAINT pk_Action PRIMARY KEY (name)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-
-        $conn->query("CREATE TABLE IF NOT EXISTS UtilisateurAction (
+        $query->execute();
+        
+        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS UtilisateurAction (
             userLogin VARCHAR(100) NOT NULL,
             actionName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_UserAction PRIMARY KEY (userLogin, actionName),
@@ -46,74 +51,73 @@
             CONSTRAINT fk_UserAction_2 FOREIGN KEY (actionName) REFERENCES Action(name)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
+        $query->execute();
+    }
 
-		// la fonction bdd() renvoie l'instance de connexion à la base de données.
-	}
+    /*
+        Ajoute un utilisateur.
+        @param login : le login de l'utilisateur.
+        @param mot_de_passe : le mot de passe de l'utilisateur.
+        @param confirmation : la confirmation du mot de passe de l'utilisateur.
+        @param date_de_naissance : la date de naissance de l'utilisateur.
+        @param niveau : le niveau de l'utilisateur.
+        @param competences : la liste des compétences de l'utilisateur.
+        @param message : le message de l'utilisateur qui le décrit.
+        @return si l'utilisateur a été ajouté ou non.
+    */
+    function inscrit_utilisateur($login, $mot_de_passe, $confirmation, $date_de_naissance, $niveau, $competences, $message) {
+        return false;
+    }
 
-	/*
-		Ajoute un utilisateur.
-		@param login : le login de l'utilisateur.
-		@param mot_de_passe : le mot de passe de l'utilisateur.
-		@param confirmation : la confirmation du mot de passe de l'utilisateur.
-		@param date_de_naissance : la date de naissance de l'utilisateur.
-		@param niveau : le niveau de l'utilisateur.
-		@param competences : la liste des compétences de l'utilisateur.
-		@param message : le message de l'utilisateur qui le décrit.
-		@return si l'utilisateur a été ajouté ou non.
-	*/
-	function inscrit_utilisateur($login, $mot_de_passe, $confirmation, $date_de_naissance, $niveau, $competences, $message) {
-		return false;
-	}
+    /*
+        Sélectionne l'utilisateur selon son login et son mot de passe.
+        @param login : le login de l'utilisateur.
+        @param mot_de_passe : le mot de passe de l'utilisateur.
+        @return l'objet utilisateur s'il est trouvé avec : id, login, point (son nombre de points); null sinon.
+    */
+    function connecte_utilisateur($login, $mot_de_passe) {
+        return null;
+    }
 
-	/*
-		Sélectionne l'utilisateur selon son login et son mot de passe.
-		@param login : le login de l'utilisateur.
-		@param mot_de_passe : le mot de passe de l'utilisateur.
-		@return l'objet utilisateur s'il est trouvé avec : id, login, point (son nombre de points); null sinon.
-	*/
-	function connecte_utilisateur($login, $mot_de_passe) {
-		return null;
-	}
+    /*
+        Sélectionne l'utilisateur selon son id.
+        @param id : l'id de l'utilisateur.
+        @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
+    */
+    function recupere_utilisateur($id) {
+        return null;
+    }
 
-	/*
-		Sélectionne l'utilisateur selon son id.
-		@param id : l'id de l'utilisateur.
-		@return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
-	*/
-	function recupere_utilisateur($id) {
-		return null;
-	}
+    /*
+        Modifie le niveau, la liste des compétences et le message de l'utilisateur.
+        @param id : l'id de l'utilisateur.
+        @param niveau : le niveau de l'utilisateur.
+        @param competences : la liste des compétences de l'utilisateur.
+        @param message : le message de l'utilisateur qui le décrit.
+        @return si le niveau, les compétences et le message de l'utilisateur ont été modifiés ou non.
+    */
+    function modifie_information_utilisateur($id, $niveau, $competences, $message) {
+        return false;
+    }
 
-	/*
-		Modifie le niveau, la liste des compétences et le message de l'utilisateur.
-		@param id : l'id de l'utilisateur.
-		@param niveau : le niveau de l'utilisateur.
-		@param competences : la liste des compétences de l'utilisateur.
-		@param message : le message de l'utilisateur qui le décrit.
-		@return si le niveau, les compétences et le message de l'utilisateur ont été modifiés ou non.
-	*/
-	function modifie_information_utilisateur($id, $niveau, $competences, $message) {
-		return false;
-	}
+    /*
+        Modifie le mot de passe de l'utilisateur.
+        @param id : l'id de l'utilisateur.
+        @param ancien_mot_de_passe : l'ancien mot de passe de l'utilisateur.
+        @param mot_de_passe : le mot de passe de l'utilisateur.
+        @param confirmation : la confirmation du mot de passe de l'utilisateur.
+        @return si le mot de passe de l'utilisateur a été modifié ou non.
+    */
+    function modifie_mot_de_passe_utilisateur($id, $ancien_mot_de_passe, $mot_de_passe, $confirmation) {
+        return false;
+    }
 
-	/*
-		Modifie le mot de passe de l'utilisateur.
-		@param id : l'id de l'utilisateur.
-		@param ancien_mot_de_passe : l'ancien mot de passe de l'utilisateur.
-		@param mot_de_passe : le mot de passe de l'utilisateur.
-		@param confirmation : la confirmation du mot de passe de l'utilisateur.
-		@return si le mot de passe de l'utilisateur a été modifié ou non.
-	*/
-	function modifie_mot_de_passe_utilisateur($id, $ancien_mot_de_passe, $mot_de_passe, $confirmation) {
-		return false;
-	}
-
-	/*
-		Modifie le nombre de points de l'utilisateur.
-		@param id : l'id de l'utilisateur.
-		@param point : le nombre de point de l'utilisateur.
-		@return si le nombre de points de l'utilisateur a été modifié ou non.
-	*/
-	function modifie_point_utilisateur($id, $point) {
-		return false;
-	}
+    /*
+        Modifie le nombre de points de l'utilisateur.
+        @param id : l'id de l'utilisateur.
+        @param point : le nombre de point de l'utilisateur.
+        @return si le nombre de points de l'utilisateur a été modifié ou non.
+    */
+    function modifie_point_utilisateur($id, $point) {
+        return false;
+    }
