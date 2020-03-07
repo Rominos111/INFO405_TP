@@ -11,31 +11,21 @@
             name VARCHAR(45) NOT NULL,
             PRIMARY KEY (idGroupe))");
 
-        $conn->query("CREATE TABLE UtilisateurGroupe (
+        $conn->query("CREATE TABLE UserGroupe (
             userLogin VARCHAR(45) NOT NULL,
             groupId INT NOT NULL,
-            PRIMARY KEY (userLogin, groupId ),
-            CONSTRAINT userId
-              FOREIGN KEY ( userLogin )
-              REFERENCES Utilisateur (login),
-            CONSTRAINT groupId
-              FOREIGN KEY (groupId)
-              REFERENCES Groupe (idGroupe)
-              )");
+            CONSTRAINT pk_UserGroupe PRIMARY KEY (userLogin, groupId),
+            CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(idGroupe)
+        )");
 
-        $conn->query("CREATE TABLE Invitation (
+        $conn->query("CREATE TABLE Invite (
             userLogin VARCHAR(45) NOT NULL,
             groupeId INT NOT NULL,
-            PRIMARY KEY (userLogin,  groupeId),
-            CONSTRAINT userLogin
-              FOREIGN KEY (userLogin)
-              REFERENCES  Utilisateur (login),
-            CONSTRAINT groupeId
-              FOREIGN KEY groupeId
-              REFERENCES Groupe (idGroupe)
-            )");
-
-        $conn->close();
+            CONSTRAINT pk_Invite PRIMARY KEY (userLogin, groupeId),
+            CONSTRAINT fk_Invite_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(idGroupe)
+        )");
     }
 
     /*

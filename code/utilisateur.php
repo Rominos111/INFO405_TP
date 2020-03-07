@@ -3,7 +3,44 @@
 		Crée toutes les tables en relation avec l'utilisateur.
 	*/
 	function cree_table_utilisateur() {
-        
+        $conn = bdd();
+
+        $conn->query("CREATE TABLE User (
+            login VARCHAR(45) NOT NULL,
+            password VARCHAR(45) NOT NULL,
+            dateNaissance DATE NOT NULL,
+            niveauSql ENUM('DEBUTANT', 'INTERMEDIAIRE', 'AVANCE'),
+            description VARCHAR(45),
+            points INT DEFAULT 0,
+            CONSTRAINT pk_User PRIMARY KEY (login)
+        )");
+
+        $conn->query("CREATE TABLE Specialite (
+            name VARCHAR(45) NOT NULL,
+            CONSTRAINT pk_Specialite PRIMARY KEY (name)
+        )");
+
+        $conn->query("CREATE TABLE Competence (
+            userLogin VARCHAR(45) NOT NULL,
+            specialiteName VARCHAR(45) NOT NULL,
+            CONSTRAINT pk_Competence PRIMARY KEY (userLogin, specialiteName),
+            CONSTRAINT fk_Competence_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_Competence_2 FOREIGN KEY (specialiteName) REFERENCES Specialite(name)
+        )");
+
+        $conn->query("CREATE TABLE Action (
+            name VARCHAR(45) NOT NULL,
+            reward INT NOT NULL,
+            CONSTRAINT pk_Action PRIMARY KEY (name)
+        )");
+
+        $conn->query("CREATE TABLE UserAction (
+            userLogin VARCHAR(45) NOT NULL,
+            actionName VARCHAR(45) NOT NULL,
+            CONSTRAINT pk_UserAction PRIMARY KEY (userLogin, actionName),
+            CONSTRAINT fk_UserAction_1 FOREIGN KEY (userLogin) REFERENCES User(login),
+            CONSTRAINT fk_UserAction_2 FOREIGN KEY (actionName) REFERENCES Action(name)
+        )");
 
 		// la fonction bdd() renvoie l'instance de connexion à la base de données.
 	}

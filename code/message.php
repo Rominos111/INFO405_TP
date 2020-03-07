@@ -11,16 +11,10 @@
             content VARCHAR(45) NOT NULL,
             sujetIdDestination INT NOT NULL,
             senderLogin VARCHAR(45) NOT NULL,
-            PRIMARY KEY (idMessage),
-            CONSTRAINT expediteur
-              FOREIGN KEY (senderLogin)
-              REFERENCES User (login),
-            CONSTRAINT sujetDestination
-              FOREIGN KEY (sujetIdDestination)
-              REFERENCES Sujet (idSujet)
-              )");
-
-        $conn->close();
+            CONSTRAINT pk_Message PRIMARY KEY (idMessage),
+            CONSTRAINT fk_Message_1 FOREIGN KEY (senderLogin) REFERENCES User(login),
+            CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(idSujet)
+        )");
     }
 
     /*
