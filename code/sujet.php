@@ -7,26 +7,28 @@
         $conn = bdd();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Sujet (
-            idSujet INT NOT NULL,
+            id INT NOT NULL,
             title VARCHAR(100) NOT NULL,
             description VARCHAR(100) NOT NULL,
             picturePath VARCHAR(100) NOT NULL,
-            creatorLogin VARCHAR(100) NOT NULL,
-            CONSTRAINT pk_Sujet PRIMARY KEY (idSujet),
-            CONSTRAINT fk_Sujet FOREIGN KEY (creatorLogin) REFERENCES Utilisateur(login)
+            creatorId INT NOT NULL,
+            CONSTRAINT pk_Sujet PRIMARY KEY (id),
+            CONSTRAINT fk_Sujet FOREIGN KEY (creatorId) REFERENCES Utilisateur(id)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Favoris (
-            userLogin VARCHAR(100) NOT NULL,
+            userId INT NOT NULL,
             sujetId INT NOT NULL,
-            CONSTRAINT pk_Favoris PRIMARY KEY (userLogin, sujetId),
-            CONSTRAINT fk_Favoris_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
-            CONSTRAINT fk_Favoris_2 FOREIGN KEY (sujetId) REFERENCES Sujet(idSujet)
+            CONSTRAINT pk_Favoris PRIMARY KEY (userId, sujetId),
+            CONSTRAINT fk_Favoris_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+            CONSTRAINT fk_Favoris_2 FOREIGN KEY (sujetId) REFERENCES Sujet(id)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
     }
 
     /*

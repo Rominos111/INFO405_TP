@@ -12,16 +12,18 @@
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS SujetTag (
             sujetId INT NOT NULL,
             tagName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_SujetTag PRIMARY KEY (sujetId, tagName),
-            CONSTRAINT fk_SujetTag_1 FOREIGN KEY (sujetId) REFERENCES Sujet(idSujet),
+            CONSTRAINT fk_SujetTag_1 FOREIGN KEY (sujetId) REFERENCES Sujet(id),
             CONSTRAINT fk_SujetTag_2 FOREIGN KEY (tagName) REFERENCES Tag(nameTag)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
     }
 
     /*

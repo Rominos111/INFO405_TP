@@ -7,16 +7,17 @@
         $conn = bdd();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Message (
-            idMessage INT NOT NULL,
+            id INT NOT NULL,
             content VARCHAR(100) NOT NULL,
             sujetIdDestination INT NOT NULL,
-            senderLogin VARCHAR(100) NOT NULL,
-            CONSTRAINT pk_Message PRIMARY KEY (idMessage),
-            CONSTRAINT fk_Message_1 FOREIGN KEY (senderLogin) REFERENCES Utilisateur(login),
-            CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(idSujet)
+            senderId INT NOT NULL,
+            CONSTRAINT pk_Message PRIMARY KEY (id),
+            CONSTRAINT fk_Message_1 FOREIGN KEY (senderId) REFERENCES Utilisateur(id),
+            CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(id)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
     }
 
     /*

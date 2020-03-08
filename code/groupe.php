@@ -7,32 +7,35 @@
         $conn = bdd();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Groupe (
-            idGroupe INT NOT NULL,
+            id INT NOT NULL,
             name VARCHAR(100) NOT NULL,
-            PRIMARY KEY (idGroupe)
+            PRIMARY KEY (id)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS UtilisateurGroupe (
-            userLogin VARCHAR(100) NOT NULL,
+            userId INT NOT NULL,
             groupId INT NOT NULL,
-            CONSTRAINT pk_UserGroupe PRIMARY KEY (userLogin, groupId),
-            CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
-            CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(idGroupe)
+            CONSTRAINT pk_UserGroupe PRIMARY KEY (userId, groupId),
+            CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+            CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(id)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
 
         $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Invitation (
-            userLogin VARCHAR(100) NOT NULL,
+            userId INT NOT NULL,
             groupeId INT NOT NULL,
-            CONSTRAINT pk_Invite PRIMARY KEY (userLogin, groupeId),
-            CONSTRAINT fk_Invite_1 FOREIGN KEY (userLogin) REFERENCES Utilisateur(login),
-            CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(idGroupe)
+            CONSTRAINT pk_Invite PRIMARY KEY (userId, groupeId),
+            CONSTRAINT fk_Invite_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+            CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(id)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
         $query->execute();
+        $query->close();
     }
 
     /*
