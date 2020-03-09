@@ -1,23 +1,20 @@
 <?php
+    include_once "utils.php";
+
     /*
         Crée toutes les tables en relation avec le message.
     */
     function cree_table_message() {
-        // la fonction bdd() renvoie l'instance de connexion à la base de données.
-        $conn = bdd();
-
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Message (
-            id INT NOT NULL,
-            content VARCHAR(100) NOT NULL,
-            sujetIdDestination INT NOT NULL,
-            senderId INT NOT NULL,
-            CONSTRAINT pk_Message PRIMARY KEY (id),
-            CONSTRAINT fk_Message_1 FOREIGN KEY (senderId) REFERENCES Utilisateur(id),
-            CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(id)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Message (
+                id INT NOT NULL,
+                content VARCHAR(100) NOT NULL,
+                sujetIdDestination INT NOT NULL,
+                senderId INT NOT NULL,
+                CONSTRAINT pk_Message PRIMARY KEY (id),
+                CONSTRAINT fk_Message_1 FOREIGN KEY (senderId) REFERENCES Utilisateur(id),
+                CONSTRAINT fk_Message_2 FOREIGN KEY (sujetIdDestination) REFERENCES Sujet(id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
     }
 
     /*

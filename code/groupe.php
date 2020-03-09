@@ -1,41 +1,34 @@
 <?php
+    include_once "utils.php";
+
     /*
         Crée toutes les tables en relation avec le groupe.
     */
     function cree_table_groupe() {
-        // la fonction bdd() renvoie l'instance de connexion à la base de données.
-        $conn = bdd();
-
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Groupe (
-            id INT NOT NULL,
-            name VARCHAR(100) NOT NULL,
-            PRIMARY KEY (id)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Groupe (
+                id INT NOT NULL,
+                name VARCHAR(100) NOT NULL,
+                PRIMARY KEY (id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS UtilisateurGroupe (
-            userId INT NOT NULL,
-            groupId INT NOT NULL,
-            CONSTRAINT pk_UserGroupe PRIMARY KEY (userId, groupId),
-            CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
-            CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(id)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS UtilisateurGroupe (
+                userId INT NOT NULL,
+                groupId INT NOT NULL,
+                CONSTRAINT pk_UserGroupe PRIMARY KEY (userId, groupId),
+                CONSTRAINT fk_UserGroupe_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+                CONSTRAINT fk_UserGroupe_2 FOREIGN KEY (groupId) REFERENCES Groupe(id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Invitation (
-            userId INT NOT NULL,
-            groupeId INT NOT NULL,
-            CONSTRAINT pk_Invite PRIMARY KEY (userId, groupeId),
-            CONSTRAINT fk_Invite_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
-            CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(id)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Invitation (
+                userId INT NOT NULL,
+                groupeId INT NOT NULL,
+                CONSTRAINT pk_Invite PRIMARY KEY (userId, groupeId),
+                CONSTRAINT fk_Invite_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+                CONSTRAINT fk_Invite_2 FOREIGN KEY (groupeId) REFERENCES Groupe(id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
     }
 
     /*

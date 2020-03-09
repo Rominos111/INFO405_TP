@@ -1,20 +1,17 @@
 <?php
+    include_once "utils.php";
+
     /*
         Crée toutes les tables en relation avec le tag.
     */
     function cree_table_tag() {
-        // la fonction bdd() renvoie l'instance de connexion à la base de données.
-        $conn = bdd();
-
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Tag (
-            nameTag VARCHAR(100) NOT NULL,
-            CONSTRAINT pk_Tag PRIMARY KEY (nameTag)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Tag (
+                nameTag VARCHAR(100) NOT NULL,
+                CONSTRAINT pk_Tag PRIMARY KEY (nameTag)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS SujetTag (
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS SujetTag (
             sujetId INT NOT NULL,
             tagName VARCHAR(100) NOT NULL,
             CONSTRAINT pk_SujetTag PRIMARY KEY (sujetId, tagName),
@@ -22,8 +19,6 @@
             CONSTRAINT fk_SujetTag_2 FOREIGN KEY (tagName) REFERENCES Tag(nameTag)
         ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
     }
 
     /*

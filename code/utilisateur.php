@@ -1,4 +1,6 @@
 <?php
+    include_once "utils.php";
+
     define("LOGIN_MIN_SIZE", 0);
     define("LOGIN_MAX_SIZE", 64);
     define("PASSWORD_MIN_SIZE", 0);
@@ -8,63 +10,57 @@
         Crée toutes les tables en relation avec l'utilisateur.
     */
     function cree_table_utilisateur() {
-        // la fonction bdd() renvoie l'instance de connexion à la base de données.
-        $conn = bdd();
-
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Utilisateur (
-            id INT NOT NULL AUTO_INCREMENT,
-            login VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(128) NOT NULL,
-            salt VARCHAR(64) NOT NULL,
-            dateNaissance DATE NOT NULL,
-            niveauSql ENUM('DEBUTANT', 'INTERMEDIAIRE', 'AVANCE'),
-            description TEXT,
-            points INT DEFAULT 0,
-            CONSTRAINT pk_User PRIMARY KEY (id),
-            CONSTRAINT uc_User UNIQUE (login)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Utilisateur (
+                id INT NOT NULL AUTO_INCREMENT,
+                login VARCHAR(100) NOT NULL UNIQUE,
+                password VARCHAR(128) NOT NULL,
+                salt VARCHAR(64) NOT NULL,
+                dateNaissance DATE NOT NULL,
+                niveauSql ENUM('DEBUTANT', 'INTERMEDIAIRE', 'AVANCE'),
+                description TEXT,
+                points INT DEFAULT 0,
+                CONSTRAINT pk_User PRIMARY KEY (id),
+                CONSTRAINT uc_User UNIQUE (login)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Specialite (
-            name VARCHAR(100) NOT NULL,
-            CONSTRAINT pk_Specialite PRIMARY KEY (name)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Specialite (
+                id INT AUTO_INCREMENT,
+                name VARCHAR(100) UNIQUE NOT NULL,
+                CONSTRAINT pk_Specialite PRIMARY KEY (id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Competence (
-            userId INT NOT NULL,
-            specialiteName VARCHAR(100) NOT NULL,
-            CONSTRAINT pk_Competence PRIMARY KEY (userId, specialiteName),
-            CONSTRAINT fk_Competence_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
-            CONSTRAINT fk_Competence_2 FOREIGN KEY (specialiteName) REFERENCES Specialite(name)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
-        ");
-        $query->execute();
-        $query->close();
+        basicSqlRequest("ALTER TABLE Specialite AUTO_INCREMENT=1");
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Action (
-            name VARCHAR(100) NOT NULL,
-            reward INT NOT NULL,
-            CONSTRAINT pk_Action PRIMARY KEY (name)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
-        ");
-        $query->execute();
-        $query->close();
+        basicSqlRequest("INSERT INTO Specialite (name) VALUES ('Web (front-end)')");
+        basicSqlRequest("INSERT INTO Specialite (name) VALUES ('Mobile (natif)')");
+        basicSqlRequest("INSERT INTO Specialite (name) VALUES ('Serveur')");
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS UtilisateurAction (
-            userId INT NOT NULL,
-            actionName VARCHAR(100) NOT NULL,
-            CONSTRAINT pk_UserAction PRIMARY KEY (userId, actionName),
-            CONSTRAINT fk_UserAction_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
-            CONSTRAINT fk_UserAction_2 FOREIGN KEY (actionName) REFERENCES Action(name)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Competence (
+                userId INT NOT NULL,
+                specialiteId INT NOT NULL,
+                CONSTRAINT pk_Competence PRIMARY KEY (userId, specialiteId),
+                CONSTRAINT fk_Competence_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+                CONSTRAINT fk_Competence_2 FOREIGN KEY (specialiteid) REFERENCES Specialite(id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
+
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Action (
+                name VARCHAR(100) NOT NULL,
+                reward INT NOT NULL,
+                CONSTRAINT pk_Action PRIMARY KEY (name)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
+
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS UtilisateurAction (
+                userId INT NOT NULL,
+                actionName VARCHAR(100) NOT NULL,
+                CONSTRAINT pk_UserAction PRIMARY KEY (userId, actionName),
+                CONSTRAINT fk_UserAction_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+                CONSTRAINT fk_UserAction_2 FOREIGN KEY (actionName) REFERENCES Action(name)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        ");
     }
 
     /*
@@ -172,7 +168,29 @@
         @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
     */
     function recupere_utilisateur($id) {
-        return null;
+    return null;
+
+        $conn = bdd();
+
+        $query = $conn->prepare("SELECT login, dateNaissance, niveauSql, message
+            FROM Utilisateur
+            WHERE id = ?"
+        );
+
+        $query->bind_param("s", $login);
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($id, $salt, $password, $points);
+
+            $query->fetch();
+
+            if (hash_equals(chiffreMotDePasse($mot_de_passe, $salt), $password)) {
+                $result = array($id, $login, $points);
+            }
+        }
+
+        $query->close();
     }
 
     /*
@@ -208,53 +226,3 @@
     function modifie_point_utilisateur($id, $point) {
         return false;
     }
-
-
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Fonction retournant si la date est valide ou non
-     *
-     * @param string Date format 2001-09-11
-     *
-     * @return bool Valide ou non
-     */
-    function dateValide($date){
-        $d = DateTime::createFromFormat("Y-m-d", $date);
-        return $d && $d->format($format) === $date;
-    }
-
-    /**
-     * Fonction chiffrant un mot de passe
-     *
-     * @param string Mot de passe non chiffré
-     * @param string Sel, si null alors créé
-     *
-     * @return array Si le sel est null, retourne le sel et le hash
-     * @return string Si le sel n'est pas null, retourne seulement le hash
-     */
-    function chiffreMotDePasse($password, $salt = null) {
-        if ($salt == null) {
-            $salt = randomString(64);
-            return array($salt, hash('sha512', $password . $salt));
-        }
-        else {
-            return hash('sha512', $password . $salt);
-        }
-    }
-
-    /**
-     * Fonction qui retourne une chaîne de caractères aléatoire de longueur n
-     *
-     * @param int Longueur de la chaîne a generer
-     *
-     * @return string
-     */
-     function randomString($n) {
-         $characters = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-         $randomString = "";
-         for ($i = 0; $i < $n; $i++) {
-             $randomString .= $characters[rand(0, strlen($characters) - 1)];
-         }
-         return $randomString;
-     }

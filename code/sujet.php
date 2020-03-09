@@ -1,34 +1,29 @@
 <?php
+    include_once "utils.php";
+
     /*
         Crée toutes les tables en relation avec le sujet.
     */
     function cree_table_sujet() {
-        // la fonction bdd() renvoie l'instance de connexion à la base de données.
-        $conn = bdd();
-
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Sujet (
-            id INT NOT NULL,
-            title VARCHAR(100) NOT NULL,
-            description VARCHAR(100) NOT NULL,
-            picturePath VARCHAR(100) NOT NULL,
-            creatorId INT NOT NULL,
-            CONSTRAINT pk_Sujet PRIMARY KEY (id),
-            CONSTRAINT fk_Sujet FOREIGN KEY (creatorId) REFERENCES Utilisateur(id)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Sujet (
+                id INT NOT NULL,
+                title VARCHAR(100) NOT NULL,
+                description VARCHAR(100) NOT NULL,
+                picturePath VARCHAR(100) NOT NULL,
+                creatorId INT NOT NULL,
+                CONSTRAINT pk_Sujet PRIMARY KEY (id),
+                CONSTRAINT fk_Sujet FOREIGN KEY (creatorId) REFERENCES Utilisateur(id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
 
-        $query = $conn->prepare("CREATE TABLE IF NOT EXISTS Favoris (
-            userId INT NOT NULL,
-            sujetId INT NOT NULL,
-            CONSTRAINT pk_Favoris PRIMARY KEY (userId, sujetId),
-            CONSTRAINT fk_Favoris_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
-            CONSTRAINT fk_Favoris_2 FOREIGN KEY (sujetId) REFERENCES Sujet(id)
-        ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
+        basicSqlRequest("CREATE TABLE IF NOT EXISTS Favoris (
+                userId INT NOT NULL,
+                sujetId INT NOT NULL,
+                CONSTRAINT pk_Favoris PRIMARY KEY (userId, sujetId),
+                CONSTRAINT fk_Favoris_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
+                CONSTRAINT fk_Favoris_2 FOREIGN KEY (sujetId) REFERENCES Sujet(id)
+            ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
-        $query->execute();
-        $query->close();
     }
 
     /*
