@@ -7,7 +7,7 @@
     function cree_table_message() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Message (
                 id INT NOT NULL,
-                content VARCHAR(100) NOT NULL,
+                content TEXT NOT NULL,
                 sujetIdDestination INT NOT NULL,
                 senderId INT NOT NULL,
                 CONSTRAINT pk_Message PRIMARY KEY (id),

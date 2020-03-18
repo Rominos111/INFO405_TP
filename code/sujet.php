@@ -8,8 +8,8 @@
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Sujet (
                 id INT NOT NULL,
                 title VARCHAR(100) NOT NULL,
-                description VARCHAR(100) NOT NULL,
-                picturePath VARCHAR(100) NOT NULL,
+                description TEXT NOT NULL,
+                picturePath VARCHAR(100),
                 creatorId INT NOT NULL,
                 CONSTRAINT pk_Sujet PRIMARY KEY (id),
                 CONSTRAINT fk_Sujet FOREIGN KEY (creatorId) REFERENCES Utilisateur(id)

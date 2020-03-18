@@ -13,6 +13,29 @@
     }
 
     /**
+     * Drop toutes les tables
+     */
+    function dropAll() {
+        basicSqlRequest("DROP TABLE Invitation");
+        basicSqlRequest("DROP TABLE UtilisateurGroupe");
+        basicSqlRequest("DROP TABLE Groupe");
+
+        basicSqlRequest("DROP TABLE Message");
+
+        basicSqlRequest("DROP TABLE SujetTag");
+        basicSqlRequest("DROP TABLE Tag");
+
+        basicSqlRequest("DROP TABLE Favoris");
+        basicSqlRequest("DROP TABLE Sujet");
+
+        basicSqlRequest("DROP TABLE UtilisateurAction");
+        basicSqlRequest("DROP TABLE Action");
+        basicSqlRequest("DROP TABLE Competence");
+        basicSqlRequest("DROP TABLE Specialite");
+        basicSqlRequest("DROP TABLE Utilisateur");
+    }
+
+    /**
      * Fonction chiffrant un mot de passe
      *
      * @param string Mot de passe non chiffré
