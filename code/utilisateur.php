@@ -162,14 +162,42 @@
         return $result;
     }
 
-    /*
-        Sélectionne l'utilisateur selon son id.
-        @param id : l'id de l'utilisateur.
-        @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
-    */
+    /**
+     * Sélectionne l'utilisateur selon son id.
+     * @param id : l'id de l'utilisateur.
+     * @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
+     */
     function recupere_utilisateur($id) {
-        return null;
-        // TODO: compétences
+        $conn = bdd();
+
+        $query = $conn->prepare("SELECT S.name
+            FROM Specialite S
+            JOIN Competence C
+            ON C.specialiteId = S.id
+            WHERE C.userId = ?"
+        );
+
+        $query->bind_param("i", $id);
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($competences);
+
+            $query->fetch();
+        }
+        else {
+            var_dump($query->error);
+        }
+
+        $query->close();
+
+
+
+        $competences = array();
+
+
+
+        $result = null;
 
         $conn = bdd();
 
@@ -186,12 +214,16 @@
 
             $query->fetch();
 
-            if (hash_equals(chiffreMotDePasse($mot_de_passe, $salt), $password)) {
-                $result = array($id, $login, $dateNaissance, $niveau, $competences, $description, $points);
-            }
+            var_dump($login);
+
+            $result = array($id, $login, $dateNaissance, $niveau, $competences, $description, $points);
         }
 
+        var_dump($result);
+
         $query->close();
+
+        return $result;
     }
 
     /*
@@ -234,7 +266,7 @@
                 $ok = $query->execute();
 
                 if ($ok) {
-                    $query->bind_result($salt, $password);
+                    $query->bind_result($password, $salt);
                     $query->fetch();
 
                     if (hash_equals(chiffreMotDePasse($ancien_mot_de_passe, $salt), $password)) {
