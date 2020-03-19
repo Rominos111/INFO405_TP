@@ -168,25 +168,26 @@
         @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
     */
     function recupere_utilisateur($id) {
-    return null;
+        return null;
+        // TODO: compétences
 
         $conn = bdd();
 
-        $query = $conn->prepare("SELECT login, dateNaissance, niveauSql, message
+        $query = $conn->prepare("SELECT login, dateNaissance, niveauSql, description, points
             FROM Utilisateur
             WHERE id = ?"
         );
 
-        $query->bind_param("s", $login);
+        $query->bind_param("i", $id);
         $ok = $query->execute();
 
         if ($ok) {
-            $query->bind_result($id, $salt, $password, $points);
+            $query->bind_result($login, $dateNaissance, $niveau, $description, $points);
 
             $query->fetch();
 
             if (hash_equals(chiffreMotDePasse($mot_de_passe, $salt), $password)) {
-                $result = array($id, $login, $points);
+                $result = array($id, $login, $dateNaissance, $niveau, $competences, $description, $points);
             }
         }
 
@@ -214,7 +215,51 @@
         @return si le mot de passe de l'utilisateur a été modifié ou non.
     */
     function modifie_mot_de_passe_utilisateur($id, $ancien_mot_de_passe, $mot_de_passe, $confirmation) {
-        return false;
+        $res = false;
+
+        if (strcmp($mot_de_passe, $confirmation) == 0) {
+            // Si mdp == confirmation
+
+            if (strlen($mot_de_passe) >= PASSWORD_MIN_SIZE and strlen($mot_de_passe) <= PASSWORD_MAX_SIZE) {
+                // Si taille valide
+
+                $conn = bdd();
+
+                $query = $conn->prepare("SELECT password, salt
+                    FROM Utilisateur
+                    WHERE id = ?"
+                );
+
+                $query->bind_param("i", $id);
+                $ok = $query->execute();
+
+                if ($ok) {
+                    $query->bind_result($salt, $password);
+                    $query->fetch();
+
+                    if (hash_equals(chiffreMotDePasse($ancien_mot_de_passe, $salt), $password)) {
+                        // Si hash(ancien_mdp, sel) == mdp_bdd
+
+                        $conn = bdd();
+
+                        $query = $conn->prepare("UPDATE Utilisateur
+                            SET password = ?, salt = ?
+                            WHERE id = ?"
+                        );
+
+                        list($newSalt, $newPassword) = chiffreMotDePasse($mot_de_passe);
+
+                        $query->bind_param("ssi", $newPassword, $newSalt, $id);
+                        $ok = $query->execute();
+                        $query->close();
+
+                        $res = $ok;
+                    }
+                }
+            }
+        }
+
+        return $res;
     }
 
     /**
@@ -224,5 +269,16 @@
      * @return si le nombre de points de l'utilisateur a été modifié ou non.
      */
     function modifie_point_utilisateur($id, $point) {
-        return false;
+        $conn = bdd();
+
+        $query = $conn->prepare("UPDATE Utilisateur
+            SET points = ?
+            WHERE id = ?"
+        );
+
+        $query->bind_param("ii", $point, $id);
+        $ok = $query->execute();
+        $query->close();
+
+        return $ok;
     }
