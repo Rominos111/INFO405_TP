@@ -9,7 +9,7 @@
                 id INT NOT NULL,
                 title VARCHAR(100) NOT NULL,
                 description TEXT NOT NULL,
-                picturePath VARCHAR(100),
+                picturePath TEXT,
                 creatorId INT NOT NULL,
                 CONSTRAINT pk_Sujet PRIMARY KEY (id),
                 CONSTRAINT fk_Sujet FOREIGN KEY (creatorId) REFERENCES Utilisateur(id)
@@ -36,7 +36,24 @@
         @return si le sujet a été ajouté ou non.
     */
     function ajoute_sujet($titre, $id_auteur, $description, $image, $tags) {
-        return false;
+        $res = true;
+
+        $conn = bdd();
+
+        $query = $conn->prepare("INSERT INTO Sujet
+            (title, description, picturePath, creatorId)
+            VALUES (?, ?, ?, ?)"
+        );
+
+        $query->bind_param("sssi", $titre, $description, $image, $id_auteur);
+        $ok = $query->execute();
+
+        if (!$ok) {
+            $res = false;
+            echo("Erreur: ");
+        }
+
+        return $res;
     }
 
     /*
