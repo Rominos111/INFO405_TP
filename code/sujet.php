@@ -1,15 +1,16 @@
 <?php
     include_once "utils.php";
 
-    /*
-        Crée toutes les tables en relation avec le sujet.
-    */
+    /**
+     * Crée toutes les tables en relation avec le sujet.
+     */
     function cree_table_sujet() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Sujet (
                 id INT NOT NULL,
                 title VARCHAR(100) NOT NULL,
                 description TEXT NOT NULL,
                 picturePath TEXT,
+                creationDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 creatorId INT NOT NULL,
                 CONSTRAINT pk_Sujet PRIMARY KEY (id),
                 CONSTRAINT fk_Sujet FOREIGN KEY (creatorId) REFERENCES Utilisateur(id)
@@ -26,21 +27,33 @@
         ");
     }
 
-    /*
-        Ajoute un sujet.
-        @param titre : le titre du sujet.
-        @param id_auteur : l'id de l'auteur du sujet.
-        @param description : la description du sujet.
-        @param image : l'image du sujet.
-        @param tags : la liste des tags.
-        @return si le sujet a été ajouté ou non.
-    */
+    /**
+     * Ajoute un sujet.
+     *
+     * @param titre : le titre du sujet.
+     * @param id_auteur : l'id de l'auteur du sujet.
+     * @param description : la description du sujet.
+     * @param image : l'image du sujet.
+     * @param tags : la liste des tags.
+     *
+     * @return si le sujet a été ajouté ou non.
+     */
     function ajoute_sujet($titre, $id_auteur, $description, $image, $tags) {
-        $res = true;
+        /*
+        $picturePathList = array(
+            "http://getdrawings.com/vectors/troll-face-vector-17.jpg",
+            "http://getdrawings.com/vectors/troll-face-vector-2.png",
+            "http://getdrawings.com/vectors/troll-face-vector-4.png",
+            "http://getdrawings.com/vectors/troll-face-vector-16.jpg",
+            "http://getdrawings.com/vectors/troll-face-vector-13.jpg"
+        );
 
-        $conn = bdd();
+        $picturePath = $picturePathList[array_rand($picturePathList)];
+        */
 
-        $query = $conn->prepare("INSERT INTO Sujet
+        $res = false;
+
+        $query = bdd()->prepare("INSERT INTO Sujet
             (title, description, picturePath, creatorId)
             VALUES (?, ?, ?, ?)"
         );
@@ -48,31 +61,93 @@
         $query->bind_param("sssi", $titre, $description, $image, $id_auteur);
         $ok = $query->execute();
 
-        if (!$ok) {
-            $res = false;
-            echo("Erreur: ");
+        if ($ok) {
+            // Recupération de l'id
+            $get_id_query = bdd()->prepare("SELECT id
+                FROM Sujet
+                WHERE title = ?
+                AND description = ?
+                AND picturePath = ?
+                AND creatorId = ?"
+            );
+
+            $get_id_query->bind_param("sssi", $titre, $description, $image, $id_auteur);
+            $ok = $get_id_query->execute();
+
+            if ($ok) {
+                $get_id_query->bind_result($id_sujet);
+                $get_id_query->fetch();
+
+                //ajout des relations tags sujets
+                ajoute_tag($id_sujet, $tags);
+
+                $res = true;
+            }
+            else {
+                echo "ERR";
+                var_dump($query->error);
+            }
+
+            $get_id_query->close();
         }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        $query->close();
 
         return $res;
     }
 
-    /*
-        Compte les sujets selon l'id de son auteur.
-        @param id_auteur : l'id de l'auteur du sujet.
-        @return le nombre de sujets qui ont l'auteur donné.
-    */
+    /**
+     * Compte les sujets selon l'id de son auteur.
+     *
+     * @param id_auteur : l'id de l'auteur du sujet.
+     *
+     * @return le nombre de sujets qui ont l'auteur donné.
+     */
     function compte_sujet_par_auteur($id_auteur) {
-        return 0;
+        $nb = 0;
+
+        $sql = "SELECT title
+                FROM Sujet
+                WHERE creatorId = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("i", $id_auteur);
+        $ok = $query->execute();
+
+        if ($ok) {
+            while ($query->fetch()) {
+                $nb ++;
+            }
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        return $nb;
     }
 
-    /*
-        Sélectionne le sujet selon son id.
-        @param id_sujet : l'id du sujet.
-        @param id_utilisateur : l'id de l'utilisateur connecté.
-        @return l'objet sujet s'il est trouvé avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté); null sinon.
-    */
+    /**
+     * Sélectionne le sujet selon son id
+     *
+     * @param id_sujet : l'id du sujet.
+     * @param id_utilisateur : l'id de l'utilisateur connecté
+     *
+     * @return l'objet sujet s'il est trouvé avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté); null sinon.
+     */
     function recupere_sujet_par_id($id_sujet, $id_utilisateur) {
-        return null;
+        $res = null;
+
+        $sql = "SELECT title, creationDate, description, picturePath, creatorId
+                FROM Sujet
+                WHERE id = ?";
+
+
+        return $res;
     }
 
     /*
@@ -94,7 +169,57 @@
         @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
     */
     function recupere_sujet_par_date($limite, $decalage, $id_utilisateur, $id_auteur = 0) {
-        return array();
+        $res = array();
+
+        $query = null;
+
+        if ($id_auteur == 0) {
+            $sql = "SELECT id, title, creationDate, description, picturePath
+                    FROM Sujet
+                    LIMIT ?
+                    OFFSET ?";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("ii", $limite, $decalage);
+        }
+        else {
+            $sql = "SELECT id, title, creationDate, description, picturePath
+                    FROM Sujet
+                    WHERE creatorId = ?
+                    LIMIT ?
+                    OFFSET ?";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("iii", $id_auteur, $limite, $decalage);
+        }
+
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($id, $title, $creationDate, $description, $picturePath);
+
+            while ($query->fetch()) {
+                list($login, $ok) = getLoginFromId($senderId);
+
+                if ($ok) {
+                    $res[] = array(
+                        "id" => $id,
+                        "titre" => $title,
+                        "login" => $login,
+                        "date_creation" => $creationDate,
+                        "description" => $description,
+                        "image" => $picturePath,
+                        "favori" => false
+                    );
+                }
+            }
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        return $res;
     }
 
     /*

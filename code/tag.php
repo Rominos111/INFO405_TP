@@ -1,9 +1,9 @@
 <?php
     include_once "utils.php";
 
-    /*
-        Crée toutes les tables en relation avec le tag.
-    */
+    /**
+     *Crée toutes les tables en relation avec le tag.
+     */
     function cree_table_tag() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Tag (
                 nameTag VARCHAR(100) NOT NULL,
@@ -21,28 +21,103 @@
         ");
     }
 
-    /*
-        Ajoute la liste des tags.
-        @param id_sujet : l'id du sujet de la liste des tags.
-        @param tags : la liste des tags.
-        @return si les tags ont été ajoutés ou non.
-    */
+    /**
+     * Ajoute la liste des tags.
+     *
+     * @param id_sujet : l'id du sujet de la liste des tags.
+     * @param tags : la liste des tags.
+     *
+     * @return si les tags ont été ajoutés ou non.
+     */
     function ajoute_tag($id_sujet, $tags) {
-        return false;
+        foreach ($tags as $tag) {
+            $sql = "INSERT INTO Tag (nameTag)
+                    VALUES (?)";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("s", $tag);
+            $ok = $query->execute();
+
+            if ($ok) {
+                echo "le tag $tag n'existait pas";
+            }
+            else {
+                echo "le tag $tag existait déjà";
+            }
+
+            $sql = "INSERT INTO SujetTag (sujetId, tagName)
+                    VALUES (?, ?)";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("is", $id_sujet, $tag);
+            $ok = $query->execute();
+
+            if (!$ok) {
+                echo "ERR:$tag";
+                var_dump($query->error);
+                return false;
+            }
+        }
+
+        return true;
     }
 
-    /*
-        Sélectionne la liste de tous les tags.
-        @return la liste de tous les tags (liste avec pour clé le nom des tags et pour valeur null).
-    */
+    /**
+     * Sélectionne la liste de tous les tags
+     *
+     * @return la liste de tous les tags (liste avec pour clé le nom des tags et pour valeur null).
+     */
     function recupere_tag() {
-        return array();
+        $res = array();
+
+        $sql = "SELECT nameTag
+                FROM Tag";
+
+        $query = bdd()->prepare($sql);
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($name);
+
+            while ($query->fetch()) {
+                $res[$name] = null;
+            }
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        return $res;
     }
 
-    /*
-        Sélectionne la liste des tags selon un sujet.
-        @return la liste des tags selon un sujet.
-    */
+    /**
+     * Sélectionne la liste des tags selon un sujet
+     *
+     * @return la liste des tags selon un sujet
+     */
     function recupere_tag_par_sujet($id_sujet) {
-        return array();
+        $res = array();
+
+        $sql = "SELECT tagName
+                FROM SujetTag
+                WHERE sujetId = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_result($id_sujet);
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($name);
+
+            while ($query->fetch()) {
+                $res[] = $name;
+            }
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        return $res;
     }
