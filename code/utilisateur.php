@@ -6,9 +6,9 @@
     define("PASSWORD_MIN_SIZE", 0);
     define("PASSWORD_MAX_SIZE", 255);
 
-    /*
-        Crée toutes les tables en relation avec l'utilisateur.
-    */
+    /**
+     * Crée toutes les tables en relation avec l'utilisateur.
+     */
     function cree_table_utilisateur() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Utilisateur (
                 id INT NOT NULL AUTO_INCREMENT,
@@ -63,17 +63,19 @@
         ");
     }
 
-    /*
-        Ajoute un utilisateur.
-        @param login : le login de l'utilisateur.
-        @param mot_de_passe : le mot de passe de l'utilisateur.
-        @param confirmation : la confirmation du mot de passe de l'utilisateur.
-        @param date_de_naissance : la date de naissance de l'utilisateur.
-        @param niveau : le niveau de l'utilisateur.
-        @param competences : la liste des compétences de l'utilisateur.
-        @param message : le message de l'utilisateur qui le décrit.
-        @return si l'utilisateur a été ajouté ou non.
-    */
+    /**
+     * Ajoute un utilisateur
+     *
+     * @param login : le login de l'utilisateur.
+     * @param mot_de_passe : le mot de passe de l'utilisateur.
+     * @param confirmation : la confirmation du mot de passe de l'utilisateur.
+     * @param date_de_naissance : la date de naissance de l'utilisateur.
+     * @param niveau : le niveau de l'utilisateur.
+     * @param competences : la liste des compétences de l'utilisateur.
+     * @param message : le message de l'utilisateur qui le décrit.
+     *
+     * @return si l'utilisateur a été ajouté ou non.
+     */
     function inscrit_utilisateur($login, $mot_de_passe, $confirmation, $date_de_naissance, $niveau, $competences, $message) {
         $ok = false;
 
@@ -101,9 +103,7 @@
                             }
 
                             if ($niveau != null) {
-                                $conn = bdd();
-
-                                $query = $conn->prepare("INSERT INTO Utilisateur (
+                                $query = bdd()->prepare("INSERT INTO Utilisateur (
                                     login,
                                     password,
                                     salt,
@@ -128,22 +128,24 @@
         return $ok;
     }
 
-    /*
-        Sélectionne l'utilisateur selon son login et son mot de passe.
-        @param login : le login de l'utilisateur.
-        @param mot_de_passe : le mot de passe de l'utilisateur.
-        @return l'objet utilisateur s'il est trouvé avec : id, login, point (son nombre de points); null sinon.
-    */
+    /**
+     * Sélectionne l'utilisateur selon son login et son mot de passe
+     *
+     * @param login : le login de l'utilisateur
+     * @param mot_de_passe : le mot de passe de l'utilisateur
+     *
+     * @return l'objet utilisateur s'il est trouvé avec : id, login, point (son nombre de points); null sinon
+     */
     function connecte_utilisateur($login, $mot_de_passe) {
+        echo "WESH";
+
         $result = null;
 
-        $conn = bdd();
+        $sql = "SELECT id, salt, password, points
+                FROM Utilisateur
+                WHERE login = ?";
 
-        $query = $conn->prepare("SELECT id, salt, password, points
-            FROM Utilisateur
-            WHERE login = ?"
-        );
-
+        $query = bdd()->prepare($sql);
         $query->bind_param("s", $login);
         $ok = $query->execute();
 
@@ -153,7 +155,12 @@
             $query->fetch();
 
             if (hash_equals(chiffreMotDePasse($mot_de_passe, $salt), $password)) {
-                $result = array($id, $login, $points);
+                $result = array("id" => $id, "login" => $login, "point" => $points);
+                $_SESSION["user"]["id"] = $id;
+                $_SESSION["user"]["login"] = $login;
+            }
+            else {
+                echo "ERR:HASH NOK";
             }
         }
 
@@ -163,45 +170,46 @@
     }
 
     /**
-     * Sélectionne l'utilisateur selon son id.
-     * @param id : l'id de l'utilisateur.
-     * @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
-     */
+      * Sélectionne l'utilisateur selon son id.
+      * @param id : l'id de l'utilisateur.
+      * @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
+      */
     function recupere_utilisateur($id) {
-        $conn = bdd();
+        echo "WESH";
 
-        $query = $conn->prepare("SELECT S.name
-            FROM Specialite S
-            JOIN Competence C
-            ON C.specialiteId = S.id
-            WHERE C.userId = ?"
-        );
+        $competences = array();
+
+        $sql = "SELECT S.name
+                FROM Specialite S
+                JOIN Competence C
+                ON C.specialiteId = S.id
+                WHERE C.userId = ?";
+
+        $query = bdd()->prepare($sql);
 
         $query->bind_param("i", $id);
         $ok = $query->execute();
+        $query->bind_result($name);
 
         if ($ok) {
-            $query->bind_result($competences);
-
-            $query->fetch();
+            while ($query->fetch()) {
+                echo $name;
+            }
         }
         else {
+            echo "ERR";
             var_dump($query->error);
         }
 
         $query->close();
 
-
+        var_dump($competences);
 
         $competences = array();
 
-
-
         $result = null;
 
-        $conn = bdd();
-
-        $query = $conn->prepare("SELECT login, dateNaissance, niveauSql, description, points
+        $query = bdd()->prepare("SELECT login, dateNaissance, niveauSql, description, points
             FROM Utilisateur
             WHERE id = ?"
         );
@@ -211,12 +219,21 @@
 
         if ($ok) {
             $query->bind_result($login, $dateNaissance, $niveau, $description, $points);
-
             $query->fetch();
 
-            var_dump($login);
-
-            $result = array($id, $login, $dateNaissance, $niveau, $competences, $description, $points);
+            $result = array(
+                "id" => $id,
+                "login" => $login,
+                "date_naissance" => $dateNaissance,
+                "niveau" => $niveau,
+                "competences" => $competences,
+                "message" => $description,
+                "point" => $points
+            );
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
         }
 
         var_dump($result);
@@ -226,26 +243,38 @@
         return $result;
     }
 
-    /*
-        Modifie le niveau, la liste des compétences et le message de l'utilisateur.
-        @param id : l'id de l'utilisateur.
-        @param niveau : le niveau de l'utilisateur.
-        @param competences : la liste des compétences de l'utilisateur.
-        @param message : le message de l'utilisateur qui le décrit.
-        @return si le niveau, les compétences et le message de l'utilisateur ont été modifiés ou non.
-    */
+    /**
+     * Modifie le niveau, la liste des compétences et le message de l'utilisateur.
+     *
+     * @param id : l'id de l'utilisateur.
+     * @param niveau : le niveau de l'utilisateur.
+     * @param competences : la liste des compétences de l'utilisateur.
+     * @param message : le message de l'utilisateur qui le décrit.
+     *
+     * @return si le niveau, les compétences et le message de l'utilisateur ont été modifiés ou non.
+     */
     function modifie_information_utilisateur($id, $niveau, $competences, $message) {
-        return false;
+        $query = bdd()->prepare("UPDATE Utilisateur
+            SET niveauSql = ?, description = ?
+            WHERE id = ?"
+        );
+
+        $query->bind_param("ssi", $niveau, $message, $id);
+        $ok = $query->execute();
+
+        return $ok;
     }
 
-    /*
-        Modifie le mot de passe de l'utilisateur.
-        @param id : l'id de l'utilisateur.
-        @param ancien_mot_de_passe : l'ancien mot de passe de l'utilisateur.
-        @param mot_de_passe : le mot de passe de l'utilisateur.
-        @param confirmation : la confirmation du mot de passe de l'utilisateur.
-        @return si le mot de passe de l'utilisateur a été modifié ou non.
-    */
+    /**
+     * Modifie le mot de passe de l'utilisateur.
+     *
+     * @param id : l'id de l'utilisateur.
+     * @param ancien_mot_de_passe : l'ancien mot de passe de l'utilisateur.
+     * @param mot_de_passe : le mot de passe de l'utilisateur.
+     * @param confirmation : la confirmation du mot de passe de l'utilisateur.
+     *
+     * @return si le mot de passe de l'utilisateur a été modifié ou non.
+     */
     function modifie_mot_de_passe_utilisateur($id, $ancien_mot_de_passe, $mot_de_passe, $confirmation) {
         $res = false;
 
@@ -255,9 +284,7 @@
             if (strlen($mot_de_passe) >= PASSWORD_MIN_SIZE and strlen($mot_de_passe) <= PASSWORD_MAX_SIZE) {
                 // Si taille valide
 
-                $conn = bdd();
-
-                $query = $conn->prepare("SELECT password, salt
+                $query = bdd()->prepare("SELECT password, salt
                     FROM Utilisateur
                     WHERE id = ?"
                 );
@@ -272,9 +299,7 @@
                     if (hash_equals(chiffreMotDePasse($ancien_mot_de_passe, $salt), $password)) {
                         // Si hash(ancien_mdp, sel) == mdp_bdd
 
-                        $conn = bdd();
-
-                        $query = $conn->prepare("UPDATE Utilisateur
+                        $query = bdd()->prepare("UPDATE Utilisateur
                             SET password = ?, salt = ?
                             WHERE id = ?"
                         );
@@ -296,14 +321,14 @@
 
     /**
      * Modifie le nombre de points de l'utilisateur.
+     *
      * @param id : l'id de l'utilisateur.
      * @param point : le nombre de point de l'utilisateur.
+     *
      * @return si le nombre de points de l'utilisateur a été modifié ou non.
      */
     function modifie_point_utilisateur($id, $point) {
-        $conn = bdd();
-
-        $query = $conn->prepare("UPDATE Utilisateur
+        $query = bdd()->prepare("UPDATE Utilisateur
             SET points = ?
             WHERE id = ?"
         );
@@ -313,4 +338,31 @@
         $query->close();
 
         return $ok;
+    }
+
+    function getLoginFromId($id) {
+        $loginRes = null;
+        $ok = false;
+
+        $sql = "SELECT login
+                FROM Utilisateur
+                WHERE id = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("i", $id);
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($login);
+            $query->fetch();
+
+            $loginRes = $login;
+            $ok = true;
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        return array($loginRes, $ok);
     }
