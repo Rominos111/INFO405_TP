@@ -1,5 +1,6 @@
 <?php
     include_once "utils.php";
+    include_once "tag.php";
 
     /*
         Crée toutes les tables en relation avec le sujet.
@@ -38,8 +39,15 @@
     function ajoute_sujet($titre, $id_auteur, $description, $image, $tags) {
         $res = true;
 
-        $conn = bdd();
+        vardump($id_auteur);
+        vardump($titre);
+        vardump($description);
+        vardump($image);
+        vardump($tags);
 
+
+        $conn = bdd();
+        //création sujet
         $query = $conn->prepare("INSERT INTO Sujet
             (title, description, picturePath, creatorId)
             VALUES (?, ?, ?, ?)"
@@ -50,12 +58,34 @@
 
         if (!$ok) {
             $res = false;
-            echo("Erreur: ");
+            echo("Erreur: " . htmlspecialchars($query->error));
+        }
+        //recupération de l'id
+        $get_id_query = $conn->prepare("SELECT id 
+            FROM Sujet
+            WHERE title = ?
+            AND description = ?
+            AND picturePath = ?
+            AND creatorId = ?"
+        );
+
+        $get_id_query->bind_param("sssi", $titre, $description, $image, $id_auteur);
+
+        $ok = $get_id_query->execute();
+
+        if ($ok) {
+            $get_id_query->bind_result($id_sujet);
+            $get_id_query->fetch();
+
+            //ajout des relations tags sujets
+            ajoute_tag($id_sujet, $tags);
         }
 
+        $get_id_query->close();
+        $query->close();
+        
         return $res;
     }
-
     /*
         Compte les sujets selon l'id de son auteur.
         @param id_auteur : l'id de l'auteur du sujet.

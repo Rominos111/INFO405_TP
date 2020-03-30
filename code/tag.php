@@ -28,7 +28,19 @@
         @return si les tags ont été ajoutés ou non.
     */
     function ajoute_tag($id_sujet, $tags) {
-        return false;
+        $res = true;
+        
+        foreach ($tags as $tag) {
+            $add_query = $conn->prepare("INSERT INTO SujetTag
+                (sujetId, tagName)
+                VALUES (?, ?)"
+            );
+
+            $add_query->bind_param("is", $id_sujet, $tagName);
+            $res = $res && $add_query->execute();
+        }
+
+        return $res;
     }
 
     /*
