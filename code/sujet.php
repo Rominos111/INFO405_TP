@@ -1,5 +1,6 @@
 <?php
     include_once "utils.php";
+    include_once "tag.php";
 
     /**
      * Crée toutes les tables en relation avec le sujet.
