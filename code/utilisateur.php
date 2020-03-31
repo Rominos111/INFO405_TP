@@ -175,8 +175,6 @@
       * @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
       */
     function recupere_utilisateur($id) {
-        echo "WESH";
-
         $competences = array();
 
         $sql = "SELECT S.name

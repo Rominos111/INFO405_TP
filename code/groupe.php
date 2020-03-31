@@ -8,7 +8,9 @@
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Groupe (
                 id INT NOT NULL,
                 name VARCHAR(100) NOT NULL,
-                PRIMARY KEY (id)
+                creatorId INT NOT NULL,
+                PRIMARY KEY (id),
+                CONSTRAINT fk_creator FOREIGN KEY (creatorId) REFERENCES Utilisateur(Id)
             ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
 
@@ -38,7 +40,26 @@
         @return si le groupe a été ajouté ou non.
     */
     function ajoute_groupe($nom, $id_proprietaire) {
-        return false;
+        $res = true;
+        $bdd = bdd();
+        //création du grp
+        $sql = "INSERT INTO Groupe
+                (name, creatorId)
+                VALUES
+                (?,?)";
+
+        $query = $bdd->prepare($sql);
+        $query->bind_param("si", $nom, $id_proprietaire);
+        $ok = $query->execute();
+        $query -> close();
+
+        //recupération de l'id du grp
+        $id_groupe = mysqli_insert_id($bdd);
+
+        //ajout du proprio 
+        $res = $ok && ajoute_membre($id_proprietaire, $id_groupe);
+
+        return $res;
     }
 
     /*
@@ -47,7 +68,63 @@
         @return l'objet groupe s'il est trouvé avec : id, nom, id_proprietaire; null sinon.
     */
     function recupere_groupe_par_id($id) {
-        return null;
+        $grp = array();
+
+        //recup infos
+        $sql = "SELECT name, creatorId
+                FROM Groupe
+                WHERE
+                id = ?";
+
+        $query = $bdd->prepare($sql);
+        $query->bind_param("i", $id);
+        $ok = $query->execute();
+        
+        if ($ok) {
+            $query->bind_result($name);
+            $query->bind_result($creatorId);
+
+            $grp = array(
+                "id" => $id,
+                "nom" => $name,
+                "id_proprietaire" => $creatorId
+            );
+        }
+        else {
+            echo "ERR";
+            var_dump($query->error);
+        }
+
+        $query -> close();
+
+        return $grp;
+    }
+
+    /**
+     * Fonction qui récupère les utilisateurs selon l'id d'un groupe
+     * 
+     * @param id : identifiant du groupe
+     * @return : la liste de utilisateurs associés au groupe
+     */
+    function recupere_utilisateurs_par_id_grp($id){
+        $users = array();
+        //recupérations des ids
+        $sql = "SELECT userId
+                FROM UtilisateurGroupe
+                WHERE
+                groupeId = ?";
+
+        $query = $bdd->prepare($sql);
+        $query->bind_param("i", $id);
+        $ok = $query->execute();
+
+        if($ok){
+            while($query->fetch()){
+                $query->bind_result($id_user);
+                $users[] = recupere_utilisateur($id_user);
+                $i++;
+            }
+        }
     }
 
     /*
@@ -56,7 +133,14 @@
         @return la liste des groupes avec : id, nom, membres (liste avec : id, login, valide).
     */
     function recupere_groupe_par_ids($ids) {
-        return array();
+        $res = array();
+
+        foreach($ids as $id){
+            $res[]["grp"] = recupere_groupe_par_id($id);
+            $res[]["users"] = recupere_utilisateurs_par_id_grp($id);
+        }
+
+        return $res;
     }
 
     /*
@@ -103,7 +187,19 @@
         @return si le membre a été ajouté ou non.
     */
     function ajoute_membre($id_utilisateur, $id_groupe) {
-        return false;
+        $res = false;
+    
+        $sql = "INSERT INTO UtilisateurGroupe
+                (userId, groupId)
+                VALUES
+                (?,?)";
+
+        $query = $bdd->prepare($sql);
+        $query->bind_param("ii", $id_utilisateur, $id_groupe);
+        $res = $query->execute();
+        $query -> close();
+
+        return $res;
     }
 
     /*
