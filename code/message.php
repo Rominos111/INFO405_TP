@@ -6,7 +6,7 @@
      */
     function cree_table_message() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Message (
-                id INT NOT NULL,
+                id INT NOT NULL AUTO_INCREMENT,
                 content TEXT NOT NULL,
                 sujetIdDestination INT NOT NULL,
                 senderId INT NOT NULL,
@@ -33,12 +33,11 @@
                 VALUES (?, ?, ?)";
 
         $query = bdd()->prepare($sql);
-        $query->bind_result("sii", $texte, $id_sujet, $id_auteur);
+        $query->bind_param("sii", $texte, $id_sujet, $id_auteur);
         $ok = $query->execute();
 
-        if ($ok) {
-            echo "ERR";
-            var_dump($query->error);
+        if (!$ok) {
+            logCustomMessage($query->error);
         }
 
         return $ok;
@@ -60,28 +59,35 @@
                 AND sujetIdDestination = ?";
 
         $query = bdd()->prepare($sql);
-        $query->bind_result("i", $id_sujet);
+        $query->bind_param("i", $id_sujet);
         $ok = $query->execute();
 
         if ($ok) {
-            $query->bind_param($idMessage, $content, $senderId, $creationDate);
+            $query->bind_result($idMessage, $content, $senderId, $creationDate);
 
             while ($query->fetch()) {
-                list($login, $ok) = getLoginFromId($senderId);
-
                 if ($ok) {
                     $res[] = array(
                         "id" => $idMessage,
-                        "texte" => $content,
-                        "login" => $login,
+                        "texte" => htmlspecialchars($content),
+                        "login" => $senderId,
                         "date_creation" => $creationDate
                     );
                 }
             }
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+        for ($i=0; $i<count($res); $i++) {
+            list($login, $ok) = getLoginFromId($res[$i]["login"]);
+
+            if ($ok) {
+                $res[$i]["login"] = htmlspecialchars($login);
+            }
         }
 
         return $res;
@@ -104,8 +110,7 @@
         $ok = $query->execute();
 
         if (!$ok) {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
 
         return $ok;

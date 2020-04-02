@@ -39,10 +39,10 @@
             $ok = $query->execute();
 
             if ($ok) {
-                echo "le tag $tag n'existait pas";
+                logCustomMessage("le tag $tag n'existait pas");
             }
             else {
-                echo "le tag $tag existait déjà";
+                logCustomMessage("le tag $tag existait déjà");
             }
 
             $sql = "INSERT INTO SujetTag (sujetId, tagName)
@@ -53,8 +53,7 @@
             $ok = $query->execute();
 
             if (!$ok) {
-                echo "ERR:$tag";
-                var_dump($query->error);
+                logCustomMessage($query->error);
                 return false;
             }
         }
@@ -80,12 +79,11 @@
             $query->bind_result($name);
 
             while ($query->fetch()) {
-                $res[$name] = null;
+                $res[htmlspecialchars($name)] = null;
             }
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
 
         return $res;
@@ -115,8 +113,7 @@
             }
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
 
         return $res;

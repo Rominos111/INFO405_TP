@@ -70,22 +70,28 @@
         return $randomString;
     }
 
+    /**
+     * Exécute une requête sql basique
+     */
     function basicSqlRequest($request) {
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
 
         $conn = bdd();
         $query = $conn->prepare($request);
+        $ok = $query->execute();
 
-        if ($query) {
-            $ok = $query->execute();
-            $query->close();
-
-            return $ok;
+        if (!$ok) {
+            logCustomMessage($query->error);
         }
 
-        echo "DEBUG: Requete échouée : ";
-        echo $request;
-        echo "\n\n";
+        $query->close();
 
-        return false;
+        return $ok;
+    }
+
+    /**
+     * Log dans la console JS les erreurs
+     */
+    function logCustomMessage($msg) {
+        echo "<script>console.log(\"" . str_replace("\"", "``", htmlspecialchars($msg)) . "\")</script>";
     }

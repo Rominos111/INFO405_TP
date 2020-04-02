@@ -6,10 +6,10 @@
     */
     function cree_table_groupe() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Groupe (
-                id INT NOT NULL,
+                id INT NOT NULL AUTO_INCREMENT,
                 name VARCHAR(100) NOT NULL,
                 creatorId INT NOT NULL,
-                PRIMARY KEY (id),
+                CONSTRAINT pk_Groupe PRIMARY KEY (id),
                 CONSTRAINT fk_creator FOREIGN KEY (creatorId) REFERENCES Utilisateur(Id)
             ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
@@ -56,7 +56,7 @@
         //recupération de l'id du grp
         $id_groupe = mysqli_insert_id($bdd);
 
-        //ajout du proprio 
+        //ajout du proprio
         $res = $ok && ajoute_membre($id_proprietaire, $id_groupe);
 
         return $res;
@@ -79,7 +79,7 @@
         $query = $bdd->prepare($sql);
         $query->bind_param("i", $id);
         $ok = $query->execute();
-        
+
         if ($ok) {
             $query->bind_result($name);
             $query->bind_result($creatorId);
@@ -91,8 +91,7 @@
             );
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
 
         $query -> close();
@@ -102,7 +101,7 @@
 
     /**
      * Fonction qui récupère les utilisateurs selon l'id d'un groupe
-     * 
+     *
      * @param id : identifiant du groupe
      * @return : la liste de utilisateurs associés au groupe
      */
@@ -188,7 +187,7 @@
     */
     function ajoute_membre($id_utilisateur, $id_groupe) {
         $res = false;
-    
+
         $sql = "INSERT INTO UtilisateurGroupe
                 (userId, groupId)
                 VALUES

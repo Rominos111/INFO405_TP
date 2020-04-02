@@ -137,8 +137,6 @@
      * @return l'objet utilisateur s'il est trouvé avec : id, login, point (son nombre de points); null sinon
      */
     function connecte_utilisateur($login, $mot_de_passe) {
-        echo "WESH";
-
         $result = null;
 
         $sql = "SELECT id, salt, password, points
@@ -155,14 +153,18 @@
             $query->fetch();
 
             if (hash_equals(chiffreMotDePasse($mot_de_passe, $salt), $password)) {
-                $result = array("id" => $id, "login" => $login, "point" => $points);
-                $_SESSION["user"]["id"] = $id;
-                $_SESSION["user"]["login"] = $login;
+                $result = array(
+                    "id" => $id,
+                    "login" => htmlspecialchars($login),
+                    "point" => $points
+                );
             }
             else {
-                echo "ERR:HASH NOK";
+                // Mdp changé ?
             }
         }
+
+        logCustomMessage($result);
 
         $query->close();
 
@@ -171,7 +173,9 @@
 
     /**
       * Sélectionne l'utilisateur selon son id.
+      *
       * @param id : l'id de l'utilisateur.
+      *
       * @return l'objet utilisateur s'il est trouvé avec : id, login, date_naissance, niveau, competences (liste avec pour clé l'id de la compétence et pour valeur si l'utilisateur l'a acquise ou non), message, point (son nombre de points); null sinon.
       */
     function recupere_utilisateur($id) {
@@ -191,12 +195,11 @@
 
         if ($ok) {
             while ($query->fetch()) {
-                echo $name;
+                var_dump($name);
             }
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
 
         $query->close();
@@ -221,20 +224,17 @@
 
             $result = array(
                 "id" => $id,
-                "login" => $login,
+                "login" => htmlspecialchars($login),
                 "date_naissance" => $dateNaissance,
-                "niveau" => $niveau,
+                "niveau" => htmlspecialchars($niveau),
                 "competences" => $competences,
-                "message" => $description,
+                "message" => htmlspecialchars($description),
                 "point" => $points
             );
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
-
-        var_dump($result);
 
         $query->close();
 
@@ -259,6 +259,7 @@
 
         $query->bind_param("ssi", $niveau, $message, $id);
         $ok = $query->execute();
+        $query->close();
 
         return $ok;
     }
@@ -293,6 +294,7 @@
                 if ($ok) {
                     $query->bind_result($password, $salt);
                     $query->fetch();
+                    $query->close();
 
                     if (hash_equals(chiffreMotDePasse($ancien_mot_de_passe, $salt), $password)) {
                         // Si hash(ancien_mdp, sel) == mdp_bdd
@@ -338,6 +340,13 @@
         return $ok;
     }
 
+    /**
+     * Récupère le login d'un utilisateur selon son id
+     *
+     * @param id Id
+     *
+     * @return res Liste contenant le login et si l'id a été trouvé
+     */
     function getLoginFromId($id) {
         $loginRes = null;
         $ok = false;
@@ -358,9 +367,10 @@
             $ok = true;
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
+
+        $query->close();
 
         return array($loginRes, $ok);
     }

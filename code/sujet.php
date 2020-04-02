@@ -2,12 +2,15 @@
     include_once "utils.php";
     include_once "tag.php";
 
+    define("TITLE_MIN_SIZE", 4);
+    define("TITLE_MAX_SIZE", 64);
+
     /**
      * Crée toutes les tables en relation avec le sujet.
      */
     function cree_table_sujet() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Sujet (
-                id INT NOT NULL,
+                id INT NOT NULL AUTO_INCREMENT,
                 title VARCHAR(100) NOT NULL,
                 description TEXT NOT NULL,
                 picturePath TEXT,
@@ -40,63 +43,44 @@
      * @return si le sujet a été ajouté ou non.
      */
     function ajoute_sujet($titre, $id_auteur, $description, $image, $tags) {
-        /*
-        $picturePathList = array(
-            "http://getdrawings.com/vectors/troll-face-vector-17.jpg",
-            "http://getdrawings.com/vectors/troll-face-vector-2.png",
-            "http://getdrawings.com/vectors/troll-face-vector-4.png",
-            "http://getdrawings.com/vectors/troll-face-vector-16.jpg",
-            "http://getdrawings.com/vectors/troll-face-vector-13.jpg"
-        );
+        if ($image == "") {
+            $picturePathList = array(
+                "http://getdrawings.com/vectors/troll-face-vector-17.jpg",
+                "http://getdrawings.com/vectors/troll-face-vector-2.png",
+                "http://getdrawings.com/vectors/troll-face-vector-4.png",
+                "http://getdrawings.com/vectors/troll-face-vector-16.jpg",
+                "http://getdrawings.com/vectors/troll-face-vector-13.jpg"
+            );
 
-        $picturePath = $picturePathList[array_rand($picturePathList)];
-        */
+            $image = $picturePathList[array_rand($picturePathList)];
+        }
+
+        // http://os-vps418.infomaniak.ch/etu_info/info_1_gr_1/?page=deconnection
 
         $res = false;
 
-        $query = bdd()->prepare("INSERT INTO Sujet
-            (title, description, picturePath, creatorId)
-            VALUES (?, ?, ?, ?)"
-        );
-
-        $query->bind_param("sssi", $titre, $description, $image, $id_auteur);
-        $ok = $query->execute();
-
-        if ($ok) {
-            // Recupération de l'id
-            $get_id_query = bdd()->prepare("SELECT id
-                FROM Sujet
-                WHERE title = ?
-                AND description = ?
-                AND picturePath = ?
-                AND creatorId = ?"
+        if (strlen($titre) >= TITLE_MIN_SIZE && strlen($titre) <= TITLE_MAX_SIZE) {
+            $query = bdd()->prepare("INSERT INTO Sujet
+                (title, description, picturePath, creatorId)
+                VALUES (?, ?, ?, ?)"
             );
 
-            $get_id_query->bind_param("sssi", $titre, $description, $image, $id_auteur);
-            $ok = $get_id_query->execute();
+            $query->bind_param("sssi", $titre, $description, $image, $id_auteur);
+            $ok = $query->execute();
 
             if ($ok) {
-                $get_id_query->bind_result($id_sujet);
-                $get_id_query->fetch();
+                $id_sujet = mysqli_insert_id($bdd);
 
                 //ajout des relations tags sujets
                 ajoute_tag($id_sujet, $tags);
-
                 $res = true;
             }
             else {
-                echo "ERR";
-                var_dump($query->error);
+                logCustomMessage($query->error);
             }
 
-            $get_id_query->close();
+            $query->close();
         }
-        else {
-            echo "ERR";
-            var_dump($query->error);
-        }
-
-        $query->close();
 
         return $res;
     }
@@ -125,9 +109,10 @@
             }
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
         }
+
+        $query->close();
 
         return $nb;
     }
@@ -200,15 +185,16 @@
             $query->bind_result($id, $title, $creationDate, $description, $picturePath);
 
             while ($query->fetch()) {
-                list($login, $ok) = getLoginFromId($senderId);
+                $login = "abc";
+                $ok = true;
 
                 if ($ok) {
                     $res[] = array(
                         "id" => $id,
-                        "titre" => $title,
-                        "login" => $login,
+                        "titre" => htmlspecialchars($title),
+                        "login" => $id_auteur,
                         "date_creation" => $creationDate,
-                        "description" => $description,
+                        "description" => htmlspecialchars($description),
                         "image" => $picturePath,
                         "favori" => false
                     );
@@ -216,8 +202,23 @@
             }
         }
         else {
-            echo "ERR";
-            var_dump($query->error);
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+        for ($i=0; $i<count($res); $i++) {
+            $id = $id_utilisateur;
+
+            if ($res[$i]["login"] != 0) {
+                $id = $res[$i]["login"];
+            }
+
+            list($login, $ok) = getLoginFromId($id);
+
+            if ($ok) {
+                $res[$i]["login"] = htmlspecialchars($login);
+            }
         }
 
         return $res;
