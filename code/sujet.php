@@ -3,7 +3,7 @@
     include_once "tag.php";
 
     define("TITLE_MIN_SIZE", 4);
-    define("TITLE_MAX_SIZE", 64);
+    define("TITLE_MAX_SIZE", 255);
 
     /**
      * Crée toutes les tables en relation avec le sujet.
@@ -11,7 +11,7 @@
     function cree_table_sujet() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Sujet (
                 id INT NOT NULL AUTO_INCREMENT,
-                title VARCHAR(100) NOT NULL,
+                title VARCHAR(256) NOT NULL,
                 description TEXT NOT NULL,
                 picturePath TEXT,
                 creationDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -55,31 +55,43 @@
             $image = $picturePathList[array_rand($picturePathList)];
         }
 
-        // http://os-vps418.infomaniak.ch/etu_info/info_1_gr_1/?page=deconnection
-
         $res = false;
 
-        if (strlen($titre) >= TITLE_MIN_SIZE && strlen($titre) <= TITLE_MAX_SIZE) {
-            $query = bdd()->prepare("INSERT INTO Sujet
-                (title, description, picturePath, creatorId)
-                VALUES (?, ?, ?, ?)"
-            );
+        if (endsWith(str_replace("/", "", str_replace(" ", "", $image)), ".php") === false) {
+            // Protection contre l'ajout de .php dans les images
 
-            $query->bind_param("sssi", $titre, $description, $image, $id_auteur);
-            $ok = $query->execute();
+            if (strpos($image, "deconnection") === false) {
+                // Protection contre l'ajout de "http://os-vps418.infomaniak.ch/etu_info/info_1_gr_1/?page=deconnection" comme URL
 
-            if ($ok) {
-                $id_sujet = mysqli_insert_id($bdd);
+                if (strlen($titre) >= TITLE_MIN_SIZE && strlen($titre) <= TITLE_MAX_SIZE) {
+                    // Protection contre les titres trop cours ou trop longs
 
-                //ajout des relations tags sujets
-                ajoute_tag($id_sujet, $tags);
-                $res = true;
+                    $conn = bdd();
+
+                    $query = $conn->prepare("INSERT INTO Sujet
+                        (title, description, picturePath, creatorId)
+                        VALUES (?, ?, ?, ?)"
+                    );
+
+                    $query->bind_param("sssi", $titre, $description, $image, $id_auteur);
+                    $ok = $query->execute();
+
+                    if ($ok) {
+                        $id_sujet = mysqli_insert_id($conn);
+
+                        $query->close();
+                        //ajout des relations tags sujets
+                        ajoute_tag($id_sujet, $tags);
+                        $res = true;
+                    }
+                    else {
+                        logCustomMessage($query->error);
+                        $query->close();
+                    }
+
+
+                }
             }
-            else {
-                logCustomMessage($query->error);
-            }
-
-            $query->close();
         }
 
         return $res;
@@ -132,35 +144,165 @@
                 FROM Sujet
                 WHERE id = ?";
 
+        $query = bdd()->prepare($sql);
+        $query->bind_param("i", $id_sujet);
+
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($title, $creationDate, $description, $picturePath, $creatorId);
+            $query->fetch();
+
+            $res = array(
+                "id" => $id_sujet,
+                "titre" => htmlspecialchars($title),
+                "login" => $creatorId,
+                "date_creation" => $creationDate,
+                "description" => htmlspecialchars($description),
+                "image" => $picturePath,
+                "favori" => false
+            );
+        }
+        else {
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+        if ($res != null) {
+            if ($res["login"] == 0) {
+                $userId = $id_utilisateur;
+            }
+            else {
+                $userId = $res["login"];
+            }
+
+            list($login, $ok) = getLoginFromId($userId);
+
+            if ($ok) {
+                $res["login"] = htmlspecialchars($login);
+            }
+
+            list($favori, $ok) = sujetFavori($res["id"], $userId);
+
+            if ($ok) {
+                $res["favori"] = $favori;
+            }
+        }
 
         return $res;
     }
 
-    /*
-        Sélectionne les sujets selon leur liste de tags.
-        @param tags : la liste de tags.
-        @param id_utilisateur : l'id de l'utilisateur connecté.
-        @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
-    */
-    function recupere_sujet_par_tag($tags, $id_utilisateur) {
-        return array();
+    /**
+     * Permet de savoir si un sujet est favori d'un utilisateur ou non
+     *
+     * @param sujetId Id du sujet
+     * @param userId Id de l'utilisateur
+     *
+     * @return array Si le sujet est favori ou non, et s'il y a eu une erreur
+     */
+    function sujetFavori($sujetId, $userId) {
+        $sql = "SELECT *
+                FROM Favoris
+                WHERE sujetId = ?
+                AND userId = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("ii", $sujetId, $userId);
+        $ok = $query->execute();
+
+        $res = false;
+
+        if ($ok) {
+            $query->bind_result($sujetId, $userId);
+
+            if ($query->fetch()) {
+                $res = true;
+            }
+        }
+        else {
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+        return array($res, $ok);
     }
 
-    /*
-        Sélectionne les sujets pour la pagination.
-        @param limite : nombre de sujets par page.
-        @param decalage : nombre de sujets à passer.
-        @param id_utilisateur : l'id de l'utilisateur connecté.
-        @param id_auteur : l'id de l'auteur du sujet (pris en compte si supérieur à 0).
-        @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
-    */
-    function recupere_sujet_par_date($limite, $decalage, $id_utilisateur, $id_auteur = 0) {
+    /**
+     * Récupération générique d'un sujet
+     *
+     * @param query Query (pas encore exécutée !)
+     * @param id_utilisateur Id de l'utilisateur connecté
+     *
+     * @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
+     */
+    function recuperationGenerale($query, $id_utilisateur) {
+        $res = array();
+        $ids = array();
+
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($id);
+
+            while ($query->fetch()) {
+                $ids[] = $id;
+            }
+        }
+        else {
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+        for ($i=0; $i<count($ids); $i++) {
+            $res[] = recupere_sujet_par_id($ids[$i], $id_utilisateur);
+        }
+
+        return $res;
+    }
+
+    /**
+     * Sélectionne les sujets selon leur liste de tags.
+     *
+     * @param tags : la liste de tags.
+     * @param id_utilisateur : l'id de l'utilisateur connecté.
+     *
+     * @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
+     */
+    function recupere_sujet_par_tag($tags, $id_utilisateur) {
         $res = array();
 
+        foreach ($tags as $tag) {
+            $sql = "SELECT sujetId
+                    FROM SujetTag
+                    WHERE tagName = ?";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("s", $tag);
+
+            $res = array_merge($res, recuperationGenerale($query, $id_utilisateur));
+        }
+
+        return $res;
+    }
+
+    /**
+     * Sélectionne les sujets pour la pagination.
+     *
+     * @param limite : nombre de sujets par page.
+     * @param decalage : nombre de sujets à passer.
+     * @param id_utilisateur : l'id de l'utilisateur connecté.
+     * @param id_auteur : l'id de l'auteur du sujet (pris en compte si supérieur à 0).
+     *
+     * @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
+    */
+    function recupere_sujet_par_date($limite, $decalage, $id_utilisateur, $id_auteur = 0) {
         $query = null;
 
         if ($id_auteur == 0) {
-            $sql = "SELECT id, title, creationDate, description, picturePath
+            $sql = "SELECT id
                     FROM Sujet
                     LIMIT ?
                     OFFSET ?";
@@ -169,7 +311,7 @@
             $query->bind_param("ii", $limite, $decalage);
         }
         else {
-            $sql = "SELECT id, title, creationDate, description, picturePath
+            $sql = "SELECT id
                     FROM Sujet
                     WHERE creatorId = ?
                     LIMIT ?
@@ -179,75 +321,87 @@
             $query->bind_param("iii", $id_auteur, $limite, $decalage);
         }
 
+        return recuperationGenerale($query, $id_utilisateur);
+    }
+
+    /**
+     * Sélectionne les sujets liés aux messages postés par l'utilisateur donné.
+     *
+     * @param id_auteur : l'id de l'auteur des messages.
+     *
+     * @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
+     */
+    function recupere_sujet_par_message($id_auteur) {
+        $sql = "SELECT sujetIdDestination
+                FROM Message
+                WHERE senderId = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("i", $id_auteur);
+
+        return recuperationGenerale($query, $id_auteur);
+    }
+
+    /**
+     * Ajoute/supprime un favori.
+     *
+     * @param id_utilisateur : l'id de l'utilisateur.
+     * @param id_sujet : l'id du sujet.
+     *
+     * @return si le favori a été ajouté/supprimé ou non.
+     */
+    function ajoute_ou_supprime_favori($id_utilisateur, $id_sujet) {
+        $sql = "INSERT INTO Favoris (userId, sujetId)
+                VALUES (?, ?)";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("ii", $id_utilisateur, $id_sujet);
+
         $ok = $query->execute();
-
-        if ($ok) {
-            $query->bind_result($id, $title, $creationDate, $description, $picturePath);
-
-            while ($query->fetch()) {
-                $login = "abc";
-                $ok = true;
-
-                if ($ok) {
-                    $res[] = array(
-                        "id" => $id,
-                        "titre" => htmlspecialchars($title),
-                        "login" => $id_auteur,
-                        "date_creation" => $creationDate,
-                        "description" => htmlspecialchars($description),
-                        "image" => $picturePath,
-                        "favori" => false
-                    );
-                }
-            }
-        }
-        else {
-            logCustomMessage($query->error);
-        }
-
         $query->close();
 
-        for ($i=0; $i<count($res); $i++) {
-            $id = $id_utilisateur;
+        $res = false;
 
-            if ($res[$i]["login"] != 0) {
-                $id = $res[$i]["login"];
-            }
+        if ($ok) {
+            $res = true;
+        }
+        else {
+            $sql = "DELETE FROM Favoris
+                    WHERE userId  = ?
+                    AND   sujetId = ?";
 
-            list($login, $ok) = getLoginFromId($id);
+            $query = bdd()->prepare($sql);
+            $query->bind_param("ii", $id_utilisateur, $id_sujet);
+
+            $ok = $query->execute();
 
             if ($ok) {
-                $res[$i]["login"] = htmlspecialchars($login);
+                $res = true;
             }
+            else {
+                logCustomMessage($query->error);
+            }
+
+            $query->close();
         }
 
         return $res;
     }
 
-    /*
-        Sélectionne les sujets liés aux messages postés par l'utilisateur donné.
-        @param id_auteur : l'id de l'auteur des messages.
-        @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
-    */
-    function recupere_sujet_par_message($id_auteur) {
-        return array();
-    }
-
-    /*
-        Ajoute/supprime un favori.
-        @param id_utilisateur : l'id de l'utilisateur.
-        @param id_sujet : l'id du sujet.
-        @return si le favori a été ajouté/supprimé ou non.
-    */
-    function ajoute_ou_supprime_favori($id_utilisateur, $id_sujet) {
-        return false;
-    }
-
-    /*
-        Sélectionne les sujets mis en favoris par l'utilisateur donné.
-        @param id_utilisateur : l'id de l'utilisateur.
-        @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
-    */
+    /**
+     * Sélectionne les sujets mis en favoris par l'utilisateur donné.
+     *
+     * @param id_utilisateur : l'id de l'utilisateur.
+     *
+     * @return la liste des sujets avec : id, titre, login (le login de l'auteur), date_creation, description, image, favori (s'il est favori de l'utilisateur connecté).
+     */
     function recupere_favori($id_utilisateur) {
-        return array();
+        $sql = "SELECT sujetId
+                FROM Favoris
+                WHERE userId = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("i", $id_utilisateur);
+
+        return recuperationGenerale($query, $id_utilisateur);
     }

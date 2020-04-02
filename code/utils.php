@@ -91,7 +91,29 @@
 
     /**
      * Log dans la console JS les erreurs
+     *
+     * @param msg Message à afficher
      */
     function logCustomMessage($msg) {
-        echo "<script>console.log(\"" . str_replace("\"", "``", htmlspecialchars($msg)) . "\")</script>";
+        $msg = str_replace("\"", "``", htmlspecialchars($msg));
+
+        echo "<script>console.log(\"$msg\");alert(\"ERREUR PHP : $msg\");</script>";
+    }
+
+    /**
+     * Si une chaine se termine par une autre chaine ou non
+     *
+     * @param baseString Chaine 1
+     * @param endString Chaine 2
+     *
+     * @return Si chaine 1 se termine par chaine 2 ou non
+     */
+    function endsWith($baseString, $endString) {
+        $len = strlen($endString);
+
+        if ($len == 0) {
+            return true;
+        }
+
+        return (substr($baseString, -$len) === $endString);
     }

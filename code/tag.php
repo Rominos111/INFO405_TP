@@ -2,7 +2,7 @@
     include_once "utils.php";
 
     /**
-     *Crée toutes les tables en relation avec le tag.
+     * Crée toutes les tables en relation avec le tag.
      */
     function cree_table_tag() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Tag (
@@ -37,13 +37,9 @@
             $query = bdd()->prepare($sql);
             $query->bind_param("s", $tag);
             $ok = $query->execute();
+            $query->close();
 
-            if ($ok) {
-                logCustomMessage("le tag $tag n'existait pas");
-            }
-            else {
-                logCustomMessage("le tag $tag existait déjà");
-            }
+
 
             $sql = "INSERT INTO SujetTag (sujetId, tagName)
                     VALUES (?, ?)";
@@ -54,8 +50,11 @@
 
             if (!$ok) {
                 logCustomMessage($query->error);
+                $query->close();
                 return false;
             }
+
+            $query->close();
         }
 
         return true;

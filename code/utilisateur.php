@@ -2,7 +2,7 @@
     include_once "utils.php";
 
     define("LOGIN_MIN_SIZE", 0);
-    define("LOGIN_MAX_SIZE", 64);
+    define("LOGIN_MAX_SIZE", 63);
     define("PASSWORD_MIN_SIZE", 0);
     define("PASSWORD_MAX_SIZE", 255);
 
@@ -12,11 +12,11 @@
     function cree_table_utilisateur() {
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Utilisateur (
                 id INT NOT NULL AUTO_INCREMENT,
-                login VARCHAR(100) NOT NULL UNIQUE,
+                login VARCHAR(64) NOT NULL UNIQUE,
                 password VARCHAR(128) NOT NULL,
                 salt VARCHAR(64) NOT NULL,
                 dateNaissance DATE NOT NULL,
-                niveauSql ENUM('DEBUTANT', 'INTERMEDIAIRE', 'AVANCE'),
+                niveauSql ENUM('0', '1', '2'),
                 description TEXT,
                 points INT DEFAULT 0,
                 CONSTRAINT pk_User PRIMARY KEY (id),
@@ -31,11 +31,29 @@
             ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
 
-        basicSqlRequest("ALTER TABLE Specialite AUTO_INCREMENT=1");
+        basicSqlRequest("ALTER TABLE Specialite AUTO_INCREMENT = 1");
 
-        basicSqlRequest("INSERT INTO Specialite (name) VALUES ('Web (front-end)')");
-        basicSqlRequest("INSERT INTO Specialite (name) VALUES ('Mobile (natif)')");
-        basicSqlRequest("INSERT INTO Specialite (name) VALUES ('Serveur')");
+        $names = array("Web (front-end)", "Mobile (natif)", "Serveur");
+
+        foreach ($names as $name) {
+            $sql = "SELECT id
+                    FROM Specialite
+                    WHERE name = ?";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("s", $name);
+            $ok = $query->execute();
+
+            if ($ok) {
+                $query->bind_result($id);
+
+                if (!$query->fetch()) {
+                    basicSqlRequest("INSERT INTO Specialite (name) VALUES ('$name')");
+                }
+            }
+
+            $query->close();
+        }
 
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Competence (
                 userId INT NOT NULL,
@@ -84,39 +102,45 @@
                 if (strlen($mot_de_passe) >= PASSWORD_MIN_SIZE and strlen($mot_de_passe) <= PASSWORD_MAX_SIZE) {
                     if (dateValide($date_de_naissance)) {
                         if (strcmp($mot_de_passe, $confirmation) == 0) {
-                            switch ($niveau) {
-                                case "1":
-                                    $niveau = "DEBUTANT";
-                                    break;
+                            $conn = bdd();
 
-                                case "2":
-                                    $niveau = "INTERMEDIAIRE";
-                                    break;
+                            $query = $conn->prepare("INSERT INTO Utilisateur (
+                                login,
+                                password,
+                                salt,
+                                dateNaissance,
+                                niveauSql,
+                                description)
+                                VALUES (?,?,?,?,?,?)"
+                            );
 
-                                case "3":
-                                    $niveau = "AVANCE";
-                                    break;
+                            list($salt, $hash) = chiffreMotDePasse($mot_de_passe);
 
-                                default:
-                                    $niveau = null;
-                                    break;
+                            $query->bind_param("ssssss", $login, $hash, $salt, $date_de_naissance, $niveau, $message);
+                            $ok = $query->execute();
+
+                            if ($ok) {
+                                $query->close();
+                                $userId = mysqli_insert_id($conn);
+
+                                foreach ($competences as $specialiteId => $here) {
+                                    if ($here && $ok) {
+                                        $sql = "INSERT INTO Competence (userId, specialiteId)
+                                                VALUES (?, ?)";
+
+                                        $query = $conn->prepare($sql);
+                                        $query->bind_param("ii", $userId, $specialiteId);
+
+                                        $ok = $query->execute();
+
+                                        if (!$ok) {
+                                            logCustomMessage($query->error);
+                                        }
+                                    }
+                                }
                             }
-
-                            if ($niveau != null) {
-                                $query = bdd()->prepare("INSERT INTO Utilisateur (
-                                    login,
-                                    password,
-                                    salt,
-                                    dateNaissance,
-                                    niveauSql,
-                                    description)
-                                    VALUES (?,?,?,?,?,?)"
-                                );
-
-                                list($salt, $hash) = chiffreMotDePasse($mot_de_passe);
-
-                                $query->bind_param("ssssss", $login, $hash, $salt, $date_de_naissance, $niveau, $message);
-                                $ok = $query->execute();
+                            else {
+                                logCustomMessage($query->error);
                                 $query->close();
                             }
                         }
@@ -181,21 +205,17 @@
     function recupere_utilisateur($id) {
         $competences = array();
 
-        $sql = "SELECT S.name
-                FROM Specialite S
-                JOIN Competence C
-                ON C.specialiteId = S.id
-                WHERE C.userId = ?";
+        $sql = "SELECT id
+                FROM Specialite";
 
         $query = bdd()->prepare($sql);
-
-        $query->bind_param("i", $id);
         $ok = $query->execute();
-        $query->bind_result($name);
 
         if ($ok) {
+            $query->bind_result($specialiteId);
+
             while ($query->fetch()) {
-                var_dump($name);
+                $competences[$specialiteId] = false;
             }
         }
         else {
@@ -204,9 +224,31 @@
 
         $query->close();
 
-        var_dump($competences);
 
-        $competences = array();
+
+        $sql = "SELECT specialiteId
+                FROM Competence
+                WHERE userId = ?";
+
+        $query = bdd()->prepare($sql);
+
+        $query->bind_param("i", $id);
+        $ok = $query->execute();
+
+        if ($ok) {
+            $query->bind_result($specialiteId);
+
+            while ($query->fetch()) {
+                $competences[$specialiteId] = true;
+            }
+        }
+        else {
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+
 
         $result = null;
 
