@@ -1,4 +1,5 @@
 <?php
+    define("DEBUG", false);
 
     /**
      * Fonction retournant si la date est valide ou non
@@ -94,14 +95,19 @@
      * @param msg Message à afficher
      */
     function logCustomMessage($msg) {
-        $msg = str_replace("\"", "``", htmlspecialchars($msg));
+        if (DEBUG) {
+            $msg = str_replace("\"", "``", htmlspecialchars($msg));
 
-        $e = new \Exception;
-        $e_str = $e->getTraceAsString();
+            $e = new \Exception;
+            $e_str = $e->getTraceAsString();
 
-        // echo "<script>console.log(\"$msg\");alert(\"ERREUR PHP : $msg\");</script>";
-        // echo "<script>console.log(\"$msg\");</script>";
-        // echo "<script>console.log(\"" . str_replace("\"", "``", htmlspecialchars($e_str)) . "\");</script>";
+            echo "<script>console.log(\"$msg\");alert(\"ERREUR PHP : $msg\");</script>";
+            echo "<script>console.log(\"$msg\");</script>";
+
+            $stacktrace = str_replace("\n", "\\\n", str_replace("\"", "``", htmlspecialchars($e_str)));
+
+            echo "<script>console.log(\"" . $stacktrace . "\");</script>";
+        }
     }
 
     /**

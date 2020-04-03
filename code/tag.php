@@ -101,7 +101,7 @@
                 WHERE sujetId = ?";
 
         $query = bdd()->prepare($sql);
-        $query->bind_result($id_sujet);
+        $query->bind_param("i", $id_sujet);
         $ok = $query->execute();
 
         if ($ok) {
