@@ -71,6 +71,28 @@
             ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
 
+        $names = array("CONNEXION" => 10, "MESSAGE" => 15);
+
+        foreach ($names as $name => $value) {
+            $sql = "SELECT reward
+                    FROM Action
+                    WHERE name = ?";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("s", $name);
+            $ok = $query->execute();
+
+            if ($ok) {
+                $query->bind_result($reward);
+
+                if (!$query->fetch()) {
+                    basicSqlRequest("INSERT INTO Action (name, reward) VALUES ('$name', '$value')");
+                }
+            }
+
+            $query->close();
+        }
+
         basicSqlRequest("CREATE TABLE IF NOT EXISTS UtilisateurAction (
                 userId INT NOT NULL,
                 actionName VARCHAR(100) NOT NULL,
@@ -182,15 +204,21 @@
                     "login" => htmlspecialchars($login),
                     "point" => $points
                 );
+
+                $query->close();
+
+                ajoute_points($id, get_points("CONNEXION"));
             }
             else {
+                $query->close();
+
                 // Mdp changé ?
             }
         }
-
-        logCustomMessage($result);
-
-        $query->close();
+        else {
+            logCustomMessage($query->error);
+            $query->close();
+        }
 
         return $result;
     }
@@ -380,6 +408,70 @@
         $query->close();
 
         return $ok;
+    }
+
+    /**
+     * Ajoute un nombre de points à l'utilisateur.
+     *
+     * @param id : l'id de l'utilisateur.
+     * @param point : le nombre de point à ajouter l'utilisateur.
+     *
+     * @return si le nombre de points de l'utilisateur a été modifié ou non.
+     */
+    function ajoute_points($id, $points) {
+        $ok = false;
+
+        if ($points == NULL) {
+            logCustomMessage("Points null");
+        }
+        else {
+            $query = bdd()->prepare("SELECT points
+                FROM Utilisateur
+                WHERE id = ?"
+            );
+
+            $query->bind_param("i", $id);
+            $ok = $query->execute();
+
+            if ($ok) {
+                $query->bind_result($pointsOld);
+                $query->fetch();
+
+                $query->close();
+
+                $ok = modifie_point_utilisateur($id, $pointsOld + $points);
+            }
+            else {
+                logCustomMessage($query->error);
+                $query->close();
+            }
+        }
+
+        return $ok;
+    }
+
+    function get_points($name) {
+        $sql = "SELECT reward
+                FROM Action
+                WHERE name = ?";
+
+        $query = bdd()->prepare($sql);
+        $query->bind_param("s", $name);
+        $ok = $query->execute();
+
+        $value = NULL;
+
+        if ($ok) {
+            $query->bind_result($value);
+            $query->fetch();
+        }
+        else {
+            logCustomMessage($query->error);
+        }
+
+        $query->close();
+
+        return $value;
     }
 
     /**
