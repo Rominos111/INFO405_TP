@@ -60,7 +60,7 @@
                 $id_groupe = mysqli_insert_id($conn);
                 $query->close();
 
-                $ok = ajoute_membre($id_proprietaire, $id_groupe);
+                $ok = ajoute_membre($id_proprietaire, $id_groupe, true);
             }
             else {
                 logCustomMessage($query->error);
@@ -116,45 +116,71 @@
      *
      * @return : la liste de utilisateurs associés au groupe
      */
-    function recupere_utilisateurs_par_id_grp($id) {
-        $users = array();
-        $ids = array();
+     function recupere_utilisateurs_par_id_grp($id) {
+         $users = array();
+         $ids = array();
 
-        $sql = "SELECT userId
-                FROM UtilisateurGroupe
-                WHERE groupId = ?";
+         $sql = "SELECT userId
+                 FROM UtilisateurGroupe
+                 WHERE groupId = ?";
 
-        $query = bdd()->prepare($sql);
-        $query->bind_param("i", $id);
-        $ok = $query->execute();
+         $query = bdd()->prepare($sql);
+         $query->bind_param("i", $id);
+         $ok = $query->execute();
 
-        if ($ok) {
-            $query->bind_result($userId);
+         if ($ok) {
+             $query->bind_result($userId);
 
-            while ($query->fetch()) {
-                $ids[] = $userId;
-            }
-        }
-        else {
-            logCustomMessage($query->error);
-        }
+             while ($query->fetch()) {
+                 $ids[$userId] = true;
+             }
+         }
+         else {
+             logCustomMessage($query->error);
+         }
 
-        $query->close();
+         $query->close();
 
-        foreach ($ids as $id) {
-            list($login, $ok) = getLoginFromId($id);
 
-            if ($ok) {
-                $users[] = array (
-                    "id" => $id,
-                    "login" => $login,
-                    "valide" => true
-                );
-            }
-        }
 
-        return $users;
-    }
+         // Récuperation des invités
+         $sql = "SELECT userId
+                 FROM Invitation
+                 WHERE groupId = ?";
+
+         $query = bdd()->prepare($sql);
+         $query->bind_param("i", $id);
+         $ok = $query->execute();
+
+         if ($ok) {
+             $query->bind_result($userId);
+
+             while ($query->fetch()) {
+                 $ids[$userId] = false;
+             }
+         }
+         else {
+             logCustomMessage($query->error);
+         }
+
+         $query->close();
+
+
+
+         foreach ($ids as $id => $value) {
+             list($login, $ok) = getLoginFromId($id);
+
+             if ($ok) {
+                 $users[] = array (
+                     "id" => $id,
+                     "login" => $login,
+                     "valide" => $value
+                 );
+             }
+         }
+
+         return $users;
+     }
 
     /**
      * Sélectionne la liste des groupes selon leur id.
@@ -166,7 +192,7 @@
     function recupere_groupe_par_ids($ids) {
         $res = array();
 
-        foreach($ids as $id){
+        foreach ($ids as $id) {
             $groupe = recupere_groupe_par_id($id);
 
             $res[] = array (
@@ -315,9 +341,15 @@
      *
      * @return si le membre a été ajouté ou non.
      */
-    function ajoute_membre($id_utilisateur, $id_groupe) {
-        $sql = "INSERT INTO UtilisateurGroupe (userId, groupId)
-                VALUES (?, ?)";
+    function ajoute_membre($id_utilisateur, $id_groupe, $creator = false) {
+        if ($creator) {
+            $sql = "INSERT INTO UtilisateurGroupe (userId, groupId)
+                    VALUES (?, ?)";
+        }
+        else {
+            $sql = "INSERT INTO Invitation (userId, groupId)
+                    VALUES (?, ?)";
+        }
 
         $query = bdd()->prepare($sql);
         $query->bind_param("ii", $id_utilisateur, $id_groupe);
@@ -332,28 +364,17 @@
         return $ok;
     }
 
-    /*
-        Valide un membre dans un groupe.
-        @param id_utilisateur : l'id du membre.
-        @param id_proprietaire : l'id du propriétaire.
-        @param id_groupe : l'id du groupe.
-        @return si le membre a été validé ou non.
-    */
+    /**
+     * Valide un membre dans un groupe.
+     *
+     * @param id_utilisateur : l'id du membre.
+     * @param id_proprietaire : l'id du propriétaire.
+     * @param id_groupe : l'id du groupe.
+     *
+     * @return si le membre a été validé ou non.
+     */
     function valide_membre($id_utilisateur, $id_proprietaire, $id_groupe) {
-        return false;
-    }
-
-    /*
-    FAIT MAISON
-        Valide un membre dans un groupe.
-        @param id_utilisateur : l'id du membre.
-        @param id_proprietaire : l'id du propriétaire.
-        @param id_groupe : l'id du groupe.
-        @return si le membre a été validé ou non.
-    */
-    function membre_en_attente($id_utilisateur, $id_groupe) {
-        $sql = "SELECT userId
-                FROM Invitation
+        $sql = "DELETE FROM Invitation
                 WHERE userId = ?
                 AND groupId = ?";
 
@@ -362,16 +383,25 @@
         $ok = $query->execute();
 
         if ($ok) {
-            $query->bind_result($userId);
+            $query->close();
 
-            $ok = $query->fetch();
-            // Si l'utilisateur est dans la table ou non
+            $sql = "INSERT INTO UtilisateurGroupe (userId, groupId)
+                    VALUES (?, ?)";
+
+            $query = bdd()->prepare($sql);
+            $query->bind_param("ii", $id_utilisateur, $id_groupe);
+            $ok = $query->execute();
+
+            if (!$ok) {
+                logCustomMessage($query->error);
+            }
+
+            $query->close();
         }
         else {
             logCustomMessage($query->error);
+            $query->close();
         }
-
-        $query->close();
 
         return $ok;
     }
@@ -419,11 +449,43 @@
                     $query->bind_param("i", $id_groupe);
                     $ok = $query->execute();
 
-                    if (!$ok) {
-                        logCustomMessage($query->error);
-                    }
+                    if ($ok) {
+                        $query->close();
 
-                    $query->close();
+                        $sql = "DELETE
+                                FROM UtilisateurGroupe
+                                WHERE groupId = ?";
+
+                        $query = bdd()->prepare($sql);
+                        $query->bind_param("i", $id_groupe);
+                        $ok = $query->execute();
+
+                        if ($ok) {
+                            $query->close();
+
+                            $sql = "DELETE
+                                    FROM Invitation
+                                    WHERE groupId = ?";
+
+                            $query = bdd()->prepare($sql);
+                            $query->bind_param("i", $id_groupe);
+                            $ok = $query->execute();
+
+                            if (!$ok) {
+                                logCustomMessage($query->error);
+                            }
+
+                            $query->close();
+                        }
+                        else {
+                            logCustomMessage($query->error);
+                            $query->close();
+                        }
+                    }
+                    else {
+                        logCustomMessage($query->error);
+                        $query->close();
+                    }
                 }
             }
             else {
