@@ -97,7 +97,12 @@
     function logCustomMessage($msg) {
         $msg = str_replace("\"", "``", htmlspecialchars($msg));
 
-        echo "<script>console.log(\"$msg\");alert(\"ERREUR PHP : $msg\");</script>";
+        $e = new \Exception;
+        $e_str = $e->getTraceAsString();
+
+        // echo "<script>console.log(\"$msg\");alert(\"ERREUR PHP : $msg\");</script>";
+        // echo "<script>console.log(\"$msg\");</script>";
+        // echo "<script>console.log(\"" . str_replace("\"", "``", htmlspecialchars($e_str)) . "\");</script>";
     }
 
     /**
