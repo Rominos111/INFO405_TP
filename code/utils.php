@@ -73,14 +73,14 @@
     /**
      * Exécute une requête sql basique
      */
-    function basicSqlRequest($request) {
+    function basicSqlRequest($request, $verbose = true) {
         // la fonction bdd() renvoie l'instance de connexion à la base de données.
 
         $conn = bdd();
         $query = $conn->prepare($request);
         $ok = $query->execute();
 
-        if (!$ok) {
+        if (!$ok && $verbose) {
             logCustomMessage($query->error);
         }
 

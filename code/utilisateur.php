@@ -31,28 +31,10 @@
             ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
         ");
 
-        basicSqlRequest("ALTER TABLE Specialite AUTO_INCREMENT = 1");
-
         $names = array("Web (front-end)", "Mobile (natif)", "Serveur");
 
         foreach ($names as $name) {
-            $sql = "SELECT id
-                    FROM Specialite
-                    WHERE name = ?";
-
-            $query = bdd()->prepare($sql);
-            $query->bind_param("s", $name);
-            $ok = $query->execute();
-
-            if ($ok) {
-                $query->bind_result($id);
-
-                if (!$query->fetch()) {
-                    basicSqlRequest("INSERT INTO Specialite (name) VALUES ('$name')");
-                }
-            }
-
-            $query->close();
+            basicSqlRequest("INSERT INTO Specialite (name) VALUES ('$name')", false);
         }
 
         basicSqlRequest("CREATE TABLE IF NOT EXISTS Competence (
@@ -96,7 +78,8 @@
         basicSqlRequest("CREATE TABLE IF NOT EXISTS UtilisateurAction (
                 userId INT NOT NULL,
                 actionName VARCHAR(100) NOT NULL,
-                CONSTRAINT pk_UserAction PRIMARY KEY (userId, actionName),
+                creationDate TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT pk_UserAction PRIMARY KEY (userId, actionName, creationDate),
                 CONSTRAINT fk_UserAction_1 FOREIGN KEY (userId) REFERENCES Utilisateur(id),
                 CONSTRAINT fk_UserAction_2 FOREIGN KEY (actionName) REFERENCES Action(name)
             ) CHARACTER SET utf8 COLLATE utf8_unicode_ci
@@ -207,7 +190,7 @@
 
                 $query->close();
 
-                ajoute_points($id, get_points("CONNEXION"));
+                ajoute_points($id, "CONNEXION");
             }
             else {
                 $query->close();
@@ -414,11 +397,13 @@
      * Ajoute un nombre de points à l'utilisateur.
      *
      * @param id : l'id de l'utilisateur.
-     * @param point : le nombre de point à ajouter l'utilisateur.
+     * @param name : le nom de l'action.
      *
      * @return si le nombre de points de l'utilisateur a été modifié ou non.
      */
-    function ajoute_points($id, $points) {
+    function ajoute_points($id, $name) {
+        $points = get_points($name);
+
         $ok = false;
 
         if ($points == NULL) {
@@ -439,7 +424,25 @@
 
                 $query->close();
 
-                $ok = modifie_point_utilisateur($id, $pointsOld + $points);
+
+
+                $query = bdd()->prepare("INSERT INTO UtilisateurAction
+                    (userId, actionName)
+                    VALUES (?, ?)"
+                );
+
+                $query->bind_param("is", $id, $name);
+                $ok = $query->execute();
+
+                if ($ok) {
+                    $query->close();
+
+                    $ok = modifie_point_utilisateur($id, $pointsOld + $points);
+                }
+                else {
+                    logCustomMessage($query->error);
+                    $query->close();
+                }
             }
             else {
                 logCustomMessage($query->error);
