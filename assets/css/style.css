@@ -1,0 +1,17 @@
+input[type=date]:not(.browser-default) {
+	padding: 10px 0;
+	height: auto;
+}
+
+.icon-block {
+  padding: 0 15px;
+}
+.icon-block .material-icons {
+	font-size: inherit;
+}
+
+.materialize-textarea.no-border {
+	margin: 0;
+	border: none !important;
+	box-shadow: none !important;
+}

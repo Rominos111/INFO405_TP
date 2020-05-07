@@ -17,4 +17,4 @@
     $mot_de_passe = "mp si tu veux le mdp";
 
     // Inclut l'autre moitié du site (connexion à la base, vue et contrôleur).
-    require_once "../../system/index.php";
+    require_once "../system/index.php";
