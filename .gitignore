@@ -1,4 +1,2 @@
-password.txt
-ModeleBDD.mwb.bak
-OrdreApparition.txt
-Compte-rendu.odt
+*.txt
+*.odt
